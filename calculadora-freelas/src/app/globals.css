@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOB.OS — Design System Tokens
+   Calculadora de Freelas — Sistema Operacional de Precificação
+   Fundamentado no Brandboard Bob Designer v1.0
+   Fontes carregadas via <link> no layout.tsx (Barlow Condensed + Inter)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+@theme {
+  /* ─── Brand Colors (Brandboard) ──────────────────────────────────────────── */
+  --color-brand-red: #FF0000;
+  --color-brand-yellow: #FFC700;
+  --color-brand-green: #32D74B;
+  --color-brand-blue: #007BFF;
+  --color-brand-pink: #FF2EA6;
+  --color-brand-purple: #BA2BE2;
+
+  /* ─── Surface (Dark Mode — "fundos chapados" Brandboard) ──────────────────── */
+  --color-bg: #080808;
+  --color-surface: #101010;
+  --color-surface-raised: #161616;
+  --color-surface-overlay: #1C1C1C;
+  --color-border: #222222;
+  --color-border-subtle: #181818;
+
+  /* ─── Text ──────────────────────────────────────────────────────────────── */
+  --color-text: #FFFFFF;
+  --color-text-secondary: #A1A1AA;
+  --color-text-muted: #52525B;
+  --color-text-disabled: #3F3F46;
+
+  /* ─── Semantic ───────────────────────────────────────────────────────────── */
+  --color-success: #32D74B;
+  --color-warning: #FFC700;
+  --color-danger: #FF0000;
+  --color-info: #007BFF;
+
+  /* ─── Typography — Brandboard: "Tipografia forte, direta e sem floreios" ─── */
+  --font-display: 'Barlow Condensed', 'Arial Black', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ─── Font Sizes ─────────────────────────────────────────────────────────── */
+  --text-display-2xl: clamp(4rem, 10vw, 8rem);
+  --text-display-xl: clamp(3rem, 7vw, 6rem);
+  --text-display-lg: clamp(2.25rem, 5vw, 4rem);
+  --text-display-md: clamp(1.75rem, 3.5vw, 2.5rem);
+  --text-display-sm: clamp(1.375rem, 2.5vw, 1.875rem);
+  --text-xl: 1.25rem;
+  --text-lg: 1.125rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+  --text-2xs: 0.6875rem;
+
+  /* ─── Letter Spacing — Brandboard: "Tracking: -10 a -30" ────────────────── */
+  --tracking-display: -0.03em;
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.2em;
+
+  /* ─── Line Height ─────────────────────────────────────────────────────────── */
+  --leading-display: 0.9;
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ─── Spacing Scale ──────────────────────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* ─── Border Radius ──────────────────────────────────────────────────────── */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 12px;
+  --radius-full: 9999px;
+
+  /* ─── Transitions ────────────────────────────────────────────────────────── */
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-slow: 250ms;
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+/* ─── Scrollbar Styling ───────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ─── Selection ───────────────────────────────────────────────────────────── */
+
+::selection {
+  background-color: var(--color-brand-red);
+  color: #fff;
+}
+
+/* ─── Focus ───────────────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-red);
+  outline-offset: 2px;
+}
+
+/* ─── Typography Utilities ────────────────────────────────────────────────── */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-display-2xl {
+  font-size: var(--text-display-2xl);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-display-xl {
+  font-size: var(--text-display-xl);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-display-lg {
+  font-size: var(--text-display-lg);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-display-md {
+  font-size: var(--text-display-md);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.text-display-sm {
+  font-size: var(--text-display-sm);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.label-uppercase {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+}
+
+.numeric-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-display);
+}
+
+/* ─── Color Utilities ────────────────────────────────────────────────────── */
+
+.text-red    { color: var(--color-brand-red); }
+.text-yellow { color: var(--color-brand-yellow); }
+.text-green  { color: var(--color-brand-green); }
+.text-blue   { color: var(--color-brand-blue); }
+.text-pink   { color: var(--color-brand-pink); }
+.text-purple { color: var(--color-brand-purple); }
+
+.bg-red    { background-color: var(--color-brand-red); }
+.bg-yellow { background-color: var(--color-brand-yellow); }
+.bg-green  { background-color: var(--color-brand-green); }
+.bg-blue   { background-color: var(--color-brand-blue); }
+.bg-pink   { background-color: var(--color-brand-pink); }
+.bg-purple { background-color: var(--color-brand-purple); }
+
+/* ─── Surface Utilities ───────────────────────────────────────────────────── */
+
+.surface          { background-color: var(--color-surface); border: 1px solid var(--color-border); }
+.surface-raised   { background-color: var(--color-surface-raised); border: 1px solid var(--color-border); }
+.surface-overlay  { background-color: var(--color-surface-overlay); border: 1px solid var(--color-border); }
+
+/* ─── Animated Underline ──────────────────────────────────────────────────── */
+
+.animated-underline {
+  position: relative;
+}
+
+.animated-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-brand-red);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.animated-underline:hover::after {
+  width: 100%;
+}
+
+/* ─── Price Tag Animation ─────────────────────────────────────────────────── */
+
+@keyframes price-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.price-animate {
+  animation: price-in var(--duration-slow) var(--ease-out) forwards;
+}
+
+/* ─── Skeleton Loading ────────────────────────────────────────────────────── */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-raised) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ─── Fade In ─────────────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--duration-slow) var(--ease-out) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up var(--duration-slow) var(--ease-out) forwards;
+}
+
+/* ─── Divider ─────────────────────────────────────────────────────────────── */
+
+.divider {
+  height: 1px;
+  background-color: var(--color-border);
+  width: 100%;
+}
+
+/* ─── Number Input ────────────────────────────────────────────────────────── */
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}

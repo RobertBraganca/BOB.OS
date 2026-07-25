@@ -1,0 +1,186 @@
+// Prisma Schema — BOB.OS Calculadora de Freelas
+// Fundamentado no PRD/SRS v1.0, seção 5 — Modelo de Dados
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relações
+  sessions      Session[]
+  accounts      Account[]
+  profile       Profile?
+  expenses      MonthlyExpenses?
+  quotes        Quote[]
+
+  @@map("users")
+}
+
+// ─── Auth (Better Auth) ───────────────────────────────────────────────────────
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                   String    @id @default(cuid())
+  userId               String
+  accountId            String
+  providerId           String
+  accessToken          String?
+  refreshToken         String?
+  idToken              String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                String?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  serviceArea     String   // ServiceArea enum
+  experienceLevel String   // ExperienceLevel enum
+  taxRegime       String   // TaxRegime enum
+  city            String?
+  state           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ─── MonthlyExpenses ──────────────────────────────────────────────────────────
+
+model MonthlyExpenses {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  // Stored as JSON for flexibility (array of ExpenseItem)
+  expenses           Json     @default("[]")
+  desiredSalary      Float
+  technicalReserve   Float    @default(0)
+  profitMargin       Float    @default(0.15)
+  availableHours     Float    @default(176)
+  billablePercentage Float    @default(60)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("monthly_expenses")
+}
+
+// ─── ServiceCategory ─────────────────────────────────────────────────────────
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  area        String   // ServiceArea
+  name        String
+  slug        String   @unique
+  description String?
+  defaultMethod String // PricingMethod
+
+  benchmarkRates BenchmarkRate[]
+
+  @@map("service_categories")
+}
+
+// ─── BenchmarkRate ────────────────────────────────────────────────────────────
+
+model BenchmarkRate {
+  id          String   @id @default(cuid())
+  categoryId  String
+  year        Int
+  region      String?  // estado ou 'BR' para nacional
+  minRate     Float
+  maxRate     Float
+  source      String   @default("Adegraf")
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("benchmark_rates")
+}
+
+// ─── Quote ────────────────────────────────────────────────────────────────────
+
+model Quote {
+  id           String   @id @default(cuid())
+  userId       String
+  projectName  String
+  serviceArea  String
+  pricingMethod String
+  // Inputs do projeto armazenados como JSON
+  inputs       Json
+  // Resultado calculado
+  minimumPrice Float
+  recommended  Float
+  premiumPrice Float
+  breakdown    Json     // breakdown percentual
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proposal Proposal?
+
+  @@map("quotes")
+}
+
+// ─── Proposal ─────────────────────────────────────────────────────────────────
+
+model Proposal {
+  id        String   @id @default(cuid())
+  quoteId   String   @unique
+  fileUrl   String?  // URL do PDF no storage
+  createdAt DateTime @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("proposals")
+}

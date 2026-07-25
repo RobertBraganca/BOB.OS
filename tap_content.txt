@@ -1,0 +1,125 @@
+BEEKOFF® · Documento de Projeto
+Termo de Abertura de Projeto (TAP)
+Calculadora de Freelas — Sistema Operacional de Precificação para Profissionais Criativos
+Campo
+Informação
+Projeto
+Calculadora de Freelas (nome provisório)
+Responsável / Patrocinador
+Robert Bragança — BEEKOFF®
+Versão do documento
+1.0
+Data de abertura
+25 de julho de 2026
+Documentos relacionados
+Estudo de Precificação (base de pesquisa) · PRD/SRS v1.0
+1. Justificativa
+O mercado freelancer criativo (design, fotografia, motion, vídeo, criação de conteúdo e web) carece de uma ferramenta de precificação que reflita a complexidade real do trabalho. As calculadoras existentes partem quase sempre da lógica simplificada preço = horas × valor/hora, o que não explica por que dois profissionais entregando o mesmo tipo de serviço cobram valores completamente diferentes.
+Essa simplificação gera dois problemas centrais no mercado:
+Subprecificação: profissionais não contabilizam custos invisíveis (estrutura, tempo administrativo, impostos) e trabalham no prejuízo sem perceber.
+Insegurança na negociação: sem um número defensável, o profissional cede a pressões de preço do cliente por falta de fundamento técnico.
+Não existe hoje, em português e adaptada à realidade tributária e associativa brasileira (MEI, Simples Nacional, tabelas ADG/Adegraf), uma ferramenta que combine cálculo técnico rigoroso, benchmark de mercado e apoio direto à negociação comercial.
+2. Objetivos
+2.1 Objetivo geral
+Entregar uma ferramenta que dê segurança técnica e comercial para profissionais criativos freelancers precificarem, defenderem e evoluírem seus preços de forma sustentável.
+2.2 Objetivos específicos
+Calcular o custo-hora real do profissional considerando horas faturáveis reais, não horas disponíveis.
+Aplicar uma metodologia modular em camadas (custo operacional, tempo, complexidade, risco, urgência, direitos de uso, valor estratégico) que se adapta a qualquer área criativa.
+Comparar o preço calculado com faixas de referência de mercado (tabelas ADG/Adegraf) como benchmark, nunca como regra fixa.
+Gerar uma proposta comercial exportável com justificativa transparente da composição do preço.
+Evoluir, em versões futuras, para um sistema operacional de precificação e gestão financeira do freelancer criativo.
+3. Escopo
+3.1 Incluso no MVP (V1 — gratuito)
+Perfil do profissional (área de atuação, experiência, regime tributário, localização).
+Cadastro de custos mensais e cálculo automático do custo-hora real (horas faturáveis, não disponíveis).
+Motor de cálculo em 3 camadas com multiplicadores de complexidade, urgência, porte do cliente e direitos de uso.
+Base de dados de referência estruturada a partir das tabelas ADG/Adegraf, usada como benchmark comparativo.
+Resultado em três faixas: mínimo (piso), recomendado e premium, com breakdown percentual da composição do preço.
+Exportação de proposta/orçamento em PDF.
+3.2 Fora do escopo do MVP (planejado para V2/V3)
+Simulador de negociação (impacto de descontos e cortes de escopo).
+Biblioteca de escopos prontos por categoria.
+Dashboard financeiro e controle de rentabilidade por projeto.
+Histórico de orçamentos e comparativo entre preço calculado e preço efetivamente fechado.
+Multiusuário / contas de agência com times e custos-hora diferentes.
+Integração com emissão de contratos e notas fiscais.
+Cobrança via assinatura (billing).
+4. Partes interessadas (stakeholders)
+Papel
+Descrição
+Patrocinador / Product Owner
+Robert Bragança (BEEKOFF®) — direção de produto, marca e priorização
+Usuários finais
+Designers, fotógrafos, motion designers, videomakers, web designers e criadores de conteúdo freelancer
+Parceiro técnico potencial
+Desenvolvedor colaborador do projeto finkoffee, para eventual integração futura
+Fonte de dados de referência
+ADG Brasil / Adegraf — tabelas usadas como benchmark, respeitando os termos de uso das tabelas originais
+5. Premissas
+O público inicial é majoritariamente brasileiro, atuando como Pessoa Física, MEI ou Simples Nacional.
+O acesso ao produto começa 100% gratuito, sem necessidade de cartão de crédito.
+As tabelas de referência (Adegraf/ADG) serão atualizadas manualmente por versão/ano e tratadas como dado versionado, não estático no código.
+O usuário fornece dados financeiros pessoais/profissionais sensíveis (despesas, faturamento estimado), o que exige tratamento de dados como prioridade desde o primeiro release.
+6. Restrições
+Orçamento operacional inicial enxuto (produto bootstrapped) — a arquitetura deve minimizar custo de infraestrutura desde o MVP.
+Conformidade obrigatória com a LGPD (Lei Geral de Proteção de Dados) desde o dia 1, por lidar com dados financeiros e pessoais.
+O modelo de monetização não pode onerar o público-alvo (freelancers e profissionais autônomos, muitas vezes em início de carreira).
+7. Modelo de monetização (visão macro)
+A estratégia de monetização é deliberadamente progressiva e não extrativista — o objetivo é sustentar a operação, não maximizar receita sobre um público que o próprio produto existe para proteger financeiramente.
+Fase
+Modelo
+Racional
+V1 — MVP
+100% gratuito
+Validação de produto, aquisição de base, construção de confiança e dados de uso
+V2
+Freemium — funcionalidades avançadas (benchmark regional, biblioteca de escopos, simulador de negociação, propostas automáticas, dashboard financeiro) atrás de assinatura de baixo valor
+Preço calibrado para cobrir custo de infraestrutura e operação + margem operacional saudável, não para maximizar ticket
+V3
+Reajustes periódicos de preço, orientados por crescimento de base e tráfego
+Garantir capacidade operacional (evitar degradação/congestionamento) sem transferir o custo de escala de forma desproporcional ao usuário
+O núcleo de cálculo (motor de precificação, camadas 1 e 2, resultado em 3 faixas) permanece gratuito indefinidamente — é o que sustenta o posicionamento do produto e a confiança da base. A cobrança recai sobre funcionalidades de gestão e escala (histórico, dashboard, propostas automatizadas, benchmark avançado).
+8. Riscos preliminares
+Risco
+Impacto
+Mitigação
+Dados de referência (Adegraf) desatualizados
+Médio
+Versionamento por ano/região e revisão periódica programada
+Baixa adesão por desconfiança no cálculo
+Alto
+Transparência total na composição do preço (breakdown percentual visível)
+Custo de infraestrutura crescer mais rápido que a receita
+Alto
+Arquitetura enxuta desde o MVP, monitoramento de uso e rate limiting
+Vazamento de dados financeiros/pessoais sensíveis
+Crítico
+Camadas de segurança e privacidade detalhadas no PRD/SRS (criptografia, LGPD, menor privilégio)
+Uso indevido das tabelas Adegraf como fonte
+Médio
+Tratar como benchmark comparativo, com atribuição de fonte, não como reprodução comercial das tabelas originais
+9. Marcos macro (cronograma indicativo)
+Cronograma sem datas fixas — a sequência de marcos é a referência de priorização; os prazos ficam a critério do responsável pelo projeto.
+Marco
+Entrega
+M1
+Base de dados estruturada (tabelas Adegraf normalizadas por categoria/porte/região)
+M2
+Motor de cálculo — Camadas 1 e 2 (custo-hora real e preço base)
+M3
+MVP funcional completo — Camada 3 (multiplicadores) + resultado em 3 faixas + exportação de proposta
+M4
+Lançamento público gratuito (V1)
+M5
+Funcionalidades V2 + implementação do modelo de assinatura
+M6
+V3 — sistema operacional de precificação e gestão financeira completo
+10. Critérios de sucesso do projeto
+MVP publicado, funcional e sem incidentes críticos de segurança.
+Base de usuários ativos crescente nos primeiros 90 dias após lançamento.
+Taxa de conversão gratuito → pago sustentável na fase V2, sem reduzir a base gratuita do núcleo de cálculo.
+Zero incidentes de exposição ou vazamento de dados de usuários.
+11. Aprovação
+Este documento formaliza a abertura do projeto Calculadora de Freelas e autoriza o início das próximas fases de planejamento e execução, detalhadas no documento PRD/SRS complementar.
+Responsável: ______________________________________
+Data: ____ / ____ / ________

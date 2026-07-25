@@ -1,0 +1,408 @@
+BEEKOFF® · Documento de Produto
+PRD & SRS
+Product Requirements Document & Software Requirements Specification
+Calculadora de Freelas — Sistema Operacional de Precificação para Profissionais Criativos
+Campo
+Informação
+Produto
+Calculadora de Freelas (nome provisório)
+Responsável
+Robert Bragança — BEEKOFF®
+Versão do documento
+1.0
+Data
+25 de julho de 2026
+Documento relacionado
+TAP v1.0 · Estudo de Precificação (base de pesquisa)
+1. Visão geral do produto
+A Calculadora de Freelas é uma ferramenta que ajuda profissionais criativos autônomos — designers, fotógrafos, motion designers, videomakers, web designers e criadores de conteúdo — a precificar seus serviços com segurança técnica e comercial.
+O erro mais comum das ferramentas existentes é reduzir a precificação a preço = horas × valor/hora. Isso não explica por que dois profissionais entregando o mesmo tipo de serviço cobram valores completamente diferentes. O preço real é resultado de um ecossistema de variáveis: custo operacional, horas realmente faturáveis (não disponíveis), complexidade, urgência, direitos de uso e valor estratégico percebido pelo cliente.
+1.1 Posicionamento
+O produto não deve ser comunicado como "uma calculadora", e sim como um Sistema Operacional de Precificação para Profissionais Criativos. Em vez de responder apenas "quanto cobrar?", o produto ajuda o profissional a responder:
+Estou cobrando abaixo do meu custo real?
+Meu negócio é sustentável no volume de projetos atual?
+Quanto preciso faturar por mês para atingir a renda desejada?
+Quanto custa, de fato, conceder 10% de desconto?
+Meu orçamento está alinhado com o mercado da minha categoria e região?
+1.2 Personas
+Persona
+Contexto
+Dor principal
+Freelancer iniciante
+1–2 anos de mercado, ainda precifica "no sentimento" ou copiando concorrentes
+Não sabe seu próprio custo-hora; tem medo de cobrar caro demais ou de menos
+Freelancer estabelecido
+5+ anos, já tem carteira de clientes recorrentes
+Sabe que está subprecificando em alguns tipos de projeto, mas não tem dados para reajustar com segurança
+Freelancer multi-serviço
+Atua em mais de uma frente (ex.: foto + motion, ou design + web)
+Cada frente tem custos e lógica de precificação diferentes; falta uma ferramenta única que unifique isso
+Pequena agência / dupla
+2–5 pessoas, já pensa em produto/processo
+Precisa padronizar a forma como a equipe precifica, hoje feito de forma manual e inconsistente
+2. Metodologia de precificação (núcleo do produto)
+Esta seção é a especificação funcional do motor de cálculo — o coração do produto. Toda a experiência do usuário é construída em torno dela.
+2.1 Por que uma metodologia modular, e não uma fórmula única
+Cada tipo de entrega segue naturalmente um método de precificação diferente no mercado real — um logo costuma ser vendido por escopo fechado, uma sessão de fotos por diária, uma gestão de tráfego por mensalidade, uma consultoria por valor percebido. Por isso, o produto não deve perguntar diretamente "quanto custa um logo?", e sim primeiro identificar qual método de precificação faz sentido para aquele tipo de projeto, e só então aplicar o motor de cálculo correspondente.
+Método
+Como funciona
+Categorias mais comuns
+Valor/hora
+Horas estimadas × valor-hora
+Ajustes pontuais, consultorias curtas, retrabalho
+Diária
+Valor da diária × número de dias
+Fotografia, filmagem em locação
+Escopo fechado
+Preço fixo por entrega definida
+Identidade visual, sites, landing pages
+Baseado em valor
+Preço ancorado no impacto gerado para o cliente
+Consultoria estratégica, branding de alto impacto
+Pacotes
+Planos fechados com entregas recorrentes definidas
+Social media, produção de conteúdo
+Retainer (mensalidade)
+Valor fixo mensal por dedicação/recorrência
+Gestão de tráfego, manutenção de sites, consultoria contínua
+2.2 Horas disponíveis ≠ horas faturáveis
+Este é o conceito técnico mais importante do motor de cálculo, e o que mais diferencia o produto de calculadoras simples. A maioria dos profissionais calcula seu valor-hora dividindo despesas pelo total de horas trabalhadas no mês — mas nem toda hora trabalhada é vendável.
+Exemplo de referência para o produto (parametrizável pelo usuário): de 176 horas disponíveis em um mês (22 dias × 8h), é comum haver algo como 20h de tarefas administrativas, 15h de reuniões, 10h de estudo, 15h de marketing/prospecção e 15h de elaboração de propostas — restando algo próximo de 100 a 110 horas realmente faturáveis. Isso significa que o valor-hora real de um profissional costuma ser quase o dobro do que ele imagina ao dividir pelo total de horas trabalhadas.
+O produto deve calcular horas faturáveis como um percentual configurável sobre as horas disponíveis (padrão sugerido: 55%–65%), nunca assumir 100% de aproveitamento.
+2.3 Fórmula em camadas
+Camada 1 — Valor-hora real (o piso, nunca cobrar abaixo disso):
+Valor-Hora Real = (Despesas Mensais + Pró-labore Desejado + Reserva Técnica + Margem de Lucro) ÷ Horas Faturáveis Mensais
+Camada 2 — Preço base do projeto:
+Preço Base = (Tempo Estimado × Valor-Hora Real) + Custos Diretos + Custos Extras
+Camada 3 — Ajuste de contexto e mercado:
+Preço Final = Preço Base × Complexidade × Urgência × Direitos de Uso × Valor Estratégico, ajustado pela carga tributária do regime do profissional
+As 8 etapas que compõem esse cálculo, na ordem em que devem aparecer na experiência do usuário:
+1. Quanto custa existir? (custo operacional mensal)
+2. Quanto vale sua hora? (valor-hora real sobre horas faturáveis)
+3. Quanto tempo o projeto leva? (estimativa de horas)
+4. Qual a complexidade? (multiplicador)
+5. Qual o risco/urgência? (multiplicador)
+6. Qual o valor estratégico para o cliente? (multiplicador, porte/impacto)
+7. Quais os custos extras? (terceiros, licenças, equipamento pontual)
+8. Margem desejada → Preço Final
+2.4 Especificidades por área
+Área
+Custos diretos típicos
+Particularidade
+Fotografia
+Equipamento, deslocamento, edição, backup/armazenamento
+Direitos de uso da imagem como multiplicador forte; separar sessão de edição
+Design gráfico
+Bancos de imagem/fontes, provas de impressão
+Direitos de uso e nº de variações pesam mais que horas
+Webdesign / Dev
+Hospedagem, domínio, licenças, manutenção pós-entrega
+Separar setup (projeto) de manutenção (retainer)
+Motion / Vídeo
+Renderização, stock de música/SFX, locução/atores
+Tempo de renderização e nº de revisões pesam no custo real
+Criação de conteúdo
+Ferramentas de agendamento, banco de referências
+Recorrência favorece modelo de assinatura/pacote, não projeto avulso
+2.5 Uso da base ADG/Adegraf como benchmark
+As tabelas de referência da ADG Brasil / Adegraf não devem ser usadas como valor oficial ou trava de cálculo. Sua função no produto é exclusivamente comparativa: calibrar faixas de preço por categoria e exibir ao usuário um comparativo do tipo "seu preço calculado foi R$ 2.450; a faixa de referência de mercado para esse tipo de projeto está entre R$ 2.200 e R$ 3.100". Isso aumenta a confiança do profissional sem transformar a tabela em regra fixa.
+3. Requisitos funcionais (RF)
+Prioridade segundo MoSCoW: Must (obrigatório no MVP), Should (importante, pode entrar logo após), Could (desejável), V2/V3 (fora do MVP).
+3.1 Perfil e onboarding
+ID
+Requisito
+Prioridade
+RF-01
+Cadastro do profissional: área de atuação, tempo de experiência, regime tributário (PF, MEI, Simples/PJ), localização (cidade/estado, opcional)
+Must
+RF-02
+Onboarding guiado que já direciona o usuário para o cálculo de custo-hora na primeira sessão
+Must
+RF-03
+Perfil salvo — despesas fixas não precisam ser recalculadas a cada novo orçamento
+Must
+3.2 Custos mensais e valor-hora
+ID
+Requisito
+Prioridade
+RF-04
+Cadastro de despesas fixas mensais (estrutura, softwares, equipamento amortizado, impostos, contador)
+Must
+RF-05
+Definição de pró-labore desejado e reserva técnica/margem de lucro
+Must
+RF-06
+Cálculo de horas faturáveis a partir de horas disponíveis, com percentual de aproveitamento configurável
+Must
+RF-07
+Cálculo automático do valor-hora real (Camada 1)
+Must
+RF-08
+Simulação de cenários de valor-hora: conservador, padrão e otimista
+Should
+3.3 Configuração e cálculo do projeto
+ID
+Requisito
+Prioridade
+RF-09
+Seleção de área de atuação e serviço específico, a partir de base de dados estruturada (Adegraf) por categoria
+Must
+RF-10
+Seleção do método de precificação recomendado para o serviço escolhido (hora, diária, escopo fechado, valor, pacote, retainer)
+Should
+RF-11
+Entrada de tempo estimado, nº de revisões e escopo do projeto
+Must
+RF-12
+Aplicação de multiplicadores: complexidade, urgência, porte do cliente, direitos de uso/exclusividade
+Must
+RF-13
+Entrada de custos diretos e custos extras (terceiros, licenças, deslocamento)
+Must
+RF-14
+Cálculo do gross-up de impostos conforme regime tributário do usuário
+Must
+3.4 Resultado e justificativa do preço
+ID
+Requisito
+Prioridade
+RF-15
+Exibição do resultado em três faixas: mínimo (piso), recomendado e premium
+Must
+RF-16
+Breakdown percentual da composição do preço (ex.: % tempo, % custo operacional, % risco, % urgência, % margem)
+Must
+RF-17
+Comparativo com faixa de referência de mercado (benchmark Adegraf/ADG) por categoria
+Should
+RF-18
+Geração de proposta comercial exportável em PDF, com justificativa do preço
+Must
+RF-19
+Valor por etapa / valor por parcela (para propostas com pagamento dividido)
+Could
+3.5 Conta, histórico e monetização
+ID
+Requisito
+Prioridade
+RF-20
+Autenticação de usuário (cadastro/login)
+Must
+RF-21
+Histórico de orçamentos gerados
+V2
+RF-22
+Comparativo entre preço calculado e preço efetivamente fechado com o cliente
+V2
+RF-23
+Simulador de negociação (impacto de descontos e cortes de escopo no lucro)
+V2
+RF-24
+Biblioteca de escopos prontos por categoria
+V2
+RF-25
+Dashboard financeiro e controle de rentabilidade por projeto
+V2/V3
+RF-26
+Gestão de assinatura (plano gratuito x plano pago), cobrança recorrente e portal de billing
+V2
+RF-27
+Multiusuário / contas de agência com custos-hora distintos por membro
+V3
+RF-28
+Integração com emissão de contratos e notas fiscais
+V3
+4. Requisitos não funcionais (RNF)
+4.1 Desempenho e escalabilidade
+ID
+Requisito
+Prioridade
+RNF-01
+Cálculo do motor de precificação deve responder em menos de 300ms para o usuário final (client-side sempre que possível)
+Must
+RNF-02
+Arquitetura deve suportar crescimento de tráfego sem degradação, via cache de dados de referência (tabelas Adegraf) e rate limiting em rotas de API
+Must
+RNF-03
+Geração de PDF não pode bloquear a interface (processamento assíncrono/client-side)
+Should
+4.2 Disponibilidade e confiabilidade
+ID
+Requisito
+Prioridade
+RNF-04
+Meta de disponibilidade de 99,5% no MVP, evoluindo conforme crescimento de base
+Should
+RNF-05
+Backup automático e versionado do banco de dados
+Must
+4.3 Usabilidade
+ID
+Requisito
+Prioridade
+RNF-06
+Fluxo principal (custo-hora → configuração do projeto → resultado) completável em até 5 minutos na primeira utilização
+Must
+RNF-07
+Interface responsiva (mobile-first para consulta rápida, desktop para montagem de proposta)
+Must
+RNF-08
+Identidade visual autoral, evitando padrões visuais genéricos de IA (tipografia, paleta e iconografia próprias, não defaults de biblioteca)
+Must
+4.4 Conformidade e privacidade
+ID
+Requisito
+Prioridade
+RNF-09
+Conformidade integral com a LGPD desde o MVP (ver seção 6)
+Must
+RNF-10
+Política de privacidade e termos de uso claros, com consentimento explícito no cadastro
+Must
+5. Modelo de dados (entidades principais)
+Entidade
+Descrição resumida
+User
+Conta de autenticação — e-mail, hash de senha (ou provedor OAuth), status do plano
+Profile
+Dados profissionais: área de atuação, experiência, regime tributário, localização
+MonthlyExpenses
+Despesas fixas mensais, pró-labore desejado, reserva técnica, % de horas faturáveis
+ServiceCategory
+Categorias de serviço por área (base estruturada a partir da Adegraf)
+BenchmarkRate
+Faixas de referência de mercado por categoria/porte/região/ano (dado versionado)
+PricingMultiplier
+Regras de multiplicador (complexidade, urgência, porte, direitos de uso) por categoria
+Quote / Project
+Um orçamento calculado — inputs do projeto, resultado nas 3 faixas, breakdown percentual
+Proposal
+Documento exportável gerado a partir de um Quote
+Subscription
+Plano ativo do usuário, status de cobrança (V2)
+Nenhuma entidade deve armazenar dados financeiros sensíveis (ex.: dados bancários, documentos fiscais completos) além do estritamente necessário para o cálculo — o produto precifica, não processa pagamentos de terceiros nem guarda documentação fiscal do usuário além do necessário para a própria cobrança da assinatura.
+6. Segurança da informação e privacidade (LGPD)
+Como o produto coleta dados financeiros e profissionais sensíveis do usuário (despesas, faturamento estimado, regime tributário), a segurança é requisito de primeira classe desde o MVP, não um item de V2.
+6.1 Princípios gerais
+Privacy by design: coletar apenas os dados estritamente necessários para o cálculo (minimização de dados).
+Menor privilégio: cada serviço/rota de API acessa apenas os dados que precisa para sua função específica.
+Transparência: o usuário sabe exatamente quais dados são coletados e para qual finalidade, com consentimento explícito (LGPD, art. 7º e 8º).
+6.2 Camadas técnicas de proteção
+Camada
+Medida
+Transporte
+HTTPS/TLS obrigatório em toda comunicação cliente-servidor; HSTS habilitado
+Dados em repouso
+Criptografia do banco de dados em repouso; campos sensíveis (ex.: despesas detalhadas) com criptografia adicional a nível de aplicação quando aplicável
+Autenticação
+Hash de senha com algoritmo moderno (ex.: bcrypt/argon2) ou delegação total a provedor OAuth confiável; suporte a autenticação de dois fatores (2FA) opcional
+Autorização
+Controle de acesso por sessão/token, isolamento de dados por usuário (nenhum usuário acessa dado de outro) validado no backend, nunca apenas no frontend
+API/Backend
+Rate limiting por IP/usuário, validação e sanitização de todos os inputs, proteção contra injeção (SQL/NoSQL) via ORM parametrizado
+Segredos
+Chaves de API, credenciais de banco e segredos de assinatura nunca em código-fonte; gestão via variáveis de ambiente/serviço de secrets do provedor de nuvem
+Logs e auditoria
+Logs de acesso e alteração em dados sensíveis, sem armazenar dados sensíveis em texto claro nos próprios logs
+Terceiros
+Processadores de pagamento (Stripe/Mercado Pago) tratam dados de cartão diretamente — o produto nunca armazena dados de cartão
+Resposta a incidentes
+Plano documentado de resposta a incidente de segurança, incluindo notificação ao usuário e à ANPD conforme exigido pela LGPD em caso de vazamento
+6.3 Direitos do titular (LGPD)
+Exportação dos próprios dados a pedido do usuário.
+Exclusão de conta com apagamento efetivo dos dados pessoais (exceto o que a lei exigir reter, ex.: dados fiscais de cobrança).
+Revogação de consentimento a qualquer momento, com efeito sobre coleta futura.
+7. Modelo de monetização — especificação
+Detalhamento funcional da estratégia macro definida no TAP.
+Fase
+O que é gratuito
+O que é pago
+Filosofia de preço
+V1
+Todo o motor de cálculo (Camadas 1, 2 e 3), resultado em 3 faixas, exportação de proposta em PDF
+Nada
+Aquisição de base e validação — sem fricção de pagamento
+V2
+Núcleo de cálculo permanece gratuito
+Histórico, dashboard financeiro, simulador de negociação, biblioteca de escopos, benchmark avançado
+Assinatura de baixo valor, dimensionada para cobrir custo de infraestrutura + operação + margem saudável — não para maximizar receita sobre o público-alvo
+V3
+Núcleo de cálculo permanece gratuito
+Camada V2 + multiusuário, integrações (contratos/notas fiscais)
+Reajustes de preço vinculados a crescimento de base e tráfego real, para sustentar capacidade operacional sem congestionamento, com comunicação transparente ao usuário sobre o motivo do reajuste
+Recomendação de implementação técnica: o cálculo de custo de infraestrutura por usuário ativo deve ser monitorado desde o V1 (mesmo sem cobrança), para que o preço da assinatura em V2 seja definido com dado real de custo, não estimativa.
+8. Arquitetura técnica e stack
+Camada
+Tecnologia
+Racional
+Frontend
+Next.js (App Router) + React + TypeScript
+SSR ajuda em SEO se a calculadora também servir como conteúdo/aquisição orgânica
+Estilo
+Tailwind CSS + shadcn/ui como base estrutural, com tokens de design (tipografia, cor, espaçamento) totalmente autorais
+Evita a "cara de IA" de componentes não customizados
+Formulários e validação
+React Hook Form + Zod
+Validação de schema compartilhada entre frontend e backend
+Data fetching / cache
+TanStack Query
+Cache de dados de referência (Adegraf) e sincronização de estado servidor
+Backend
+Next.js Route Handlers no início, evoluindo para serviço dedicado se necessário
+Evita complexidade de infraestrutura desnecessária no MVP
+Banco de dados
+PostgreSQL (Neon ou Supabase) + Prisma ORM
+Tipagem forte de schema, migrations versionadas, queries parametrizadas por padrão
+Autenticação
+Auth.js ou Better Auth
+Suporte a OAuth + e-mail/senha com boas práticas de segurança prontas
+Armazenamento de arquivos
+Supabase Storage ou Cloudflare R2
+Armazenamento de PDFs gerados e eventuais uploads
+Pagamentos (V2)
+Stripe (internacional) e/ou Mercado Pago (Brasil)
+Nunca armazenar dados de cartão diretamente no produto
+Analytics
+PostHog ou Plausible Analytics
+Métricas de uso respeitando privacidade; Plausible se o foco for minimizar coleta
+Hospedagem
+Vercel
+Deploy simples e nativo para Next.js
+9. Roadmap consolidado
+Versão
+Foco
+Requisitos-chave
+MVP / V1
+Motor de cálculo confiável e gratuito
+RF-01 a RF-20
+V2
+Gestão e monetização
+RF-21 a RF-26
+V3
+Escala e integrações
+RF-27, RF-28
+10. Métricas de sucesso (KPIs)
+Nº de orçamentos calculados por usuário ativo (indicador de utilidade recorrente).
+Taxa de conclusão do fluxo principal (onboarding → resultado) sem abandono.
+Taxa de conversão gratuito → pago na fase V2.
+NPS ou pesquisa qualitativa sobre confiança no preço sugerido.
+Custo de infraestrutura por usuário ativo (para calibrar preço da assinatura com dado real).
+11. Critérios de aceite do MVP
+Um usuário consegue, sem ajuda externa, cadastrar seu perfil, calcular seu valor-hora real e gerar um orçamento completo em até 5 minutos.
+O resultado sempre exibe as 3 faixas (mínimo, recomendado, premium) com breakdown percentual da composição do preço.
+O sistema nunca permite visualizar ou exportar um preço abaixo do piso (Camada 1) sem alerta explícito ao usuário.
+Nenhum dado de um usuário é acessível por outro usuário, validado por testes de autorização no backend.
+Toda comunicação cliente-servidor ocorre via HTTPS, e nenhum segredo/chave está exposto no código-fonte do frontend.
+12. Glossário
+Termo
+Definição
+Horas faturáveis
+Parcela das horas disponíveis efetivamente vendável ao cliente, descontado tempo administrativo, comercial e de estudo
+Piso
+Valor mínimo calculado (Camada 1) abaixo do qual o profissional opera no prejuízo
+Benchmark
+Faixa de referência de mercado (Adegraf/ADG) usada apenas como comparação, não como regra
+Retainer
+Modelo de cobrança recorrente mensal por dedicação/serviço contínuo
+Gross-up
+Ajuste do preço para que o valor do imposto seja absorvido pelo preço final, não descontado do lucro do profissional
