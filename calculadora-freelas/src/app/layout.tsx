@@ -38,6 +38,8 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
+import { ThemeProvider } from '@/components/theme-provider'
+
 export default function RootLayout({
   children,
 }: {
@@ -54,8 +56,16 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )
 }
+
