@@ -20,9 +20,13 @@ import {
   type UsageRights,
   type PricingMethod,
   calculateFullQuote,
+  getServicesByCategory,
+  getBenchmarkServiceById,
+  compareQuoteWithBenchmark,
 } from '@/lib/pricing'
 import { formatCurrency } from '@/lib/utils'
-import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react'
+import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, TrendingUp, Info } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -54,6 +58,7 @@ const DEMO_HOURLY_RATE = 64.8
 
 const INITIAL_STATE = {
   projectName: '',
+  benchmarkId: 'id_completa',
   pricingMethod: 'fixed_scope' as PricingMethod,
   estimatedHours: 40,
   revisions: 2,
@@ -115,11 +120,25 @@ function OptionCard({
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function CalcularPage() {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [form, setForm] = useState(INITIAL_STATE)
+  const serviceCategories = getServicesByCategory()
 
   const update = <K extends keyof typeof INITIAL_STATE>(key: K, value: typeof INITIAL_STATE[K]) =>
     setForm(prev => ({ ...prev, [key]: value }))
+
+  const handleServiceSelect = (serviceId: string) => {
+    const service = getBenchmarkServiceById(serviceId)
+    if (service) {
+      setForm(prev => ({
+        ...prev,
+        benchmarkId: service.id,
+        pricingMethod: service.defaultMethod,
+        projectName: prev.projectName || service.name
+      }))
+    }
+  }
 
   const canAdvance = () => {
     if (currentStep === 0) return form.projectName.trim().length > 0
@@ -183,6 +202,33 @@ export default function CalcularPage() {
                   title="Qual o projeto?"
                   description="Dê um nome ao projeto e escolha o método de precificação mais adequado para este tipo de entrega."
                 />
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="label-uppercase">Serviço de referência (ADG Brasil / Adegraf)</span>
+                    <span className="text-[0.65rem] text-[var(--color-brand-red)] font-600">RF-09 · Calibração de mercado</span>
+                  </div>
+                  <select
+                    value={form.benchmarkId}
+                    onChange={e => handleServiceSelect(e.target.value)}
+                    className="w-full h-11 px-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text)] focus:border-[var(--color-brand-red)] outline-none"
+                  >
+                    {serviceCategories.map(cat => (
+                      <optgroup key={cat.label} label={cat.label}>
+                        {cat.services.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({formatCurrency(s.recommendedRate)})
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  {getBenchmarkServiceById(form.benchmarkId) && (
+                    <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mt-0.5">
+                      {getBenchmarkServiceById(form.benchmarkId)?.description}
+                    </p>
+                  )}
+                </div>
 
                 <Input
                   label="Nome do projeto"
@@ -546,7 +592,67 @@ export default function CalcularPage() {
                 </CardContent>
               </Card>
 
-              <Button size="lg" className="w-full">
+              {/* Comparativo com Adegraf / ADG Brasil */}
+              {(() => {
+                const bmark = compareQuoteWithBenchmark(result.quote.recommended, form.benchmarkId)
+                if (!bmark) return null
+                return (
+                  <Card accent="red">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm">Comparativo com Mercado (ADG Brasil / Adegraf)</CardTitle>
+                        <Badge variant={bmark.status === 'below' ? 'warning' : bmark.status === 'premium' ? 'warning' : 'default'}>
+                          {bmark.status === 'below' ? 'Abaixo da referência' : bmark.status === 'premium' ? 'Faixa Superior / Sênior' : 'Média de Mercado'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-3">
+                      <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                        Para o serviço <strong className="text-[var(--color-text)]">{bmark.service.name}</strong>, a referência praticada por agências e profissionais plenos/sêniores varia de <strong className="text-[var(--color-text)]">{formatCurrency(bmark.service.minRate)}</strong> a <strong className="text-[var(--color-text)]">{formatCurrency(bmark.service.maxRate)}</strong>.
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] text-center">
+                        <div className="flex flex-col">
+                          <span className="text-[0.65rem] text-[var(--color-text-muted)] uppercase">Piso ADG</span>
+                          <span className="text-xs font-700 text-[var(--color-text-secondary)]">{formatCurrency(bmark.service.minRate)}</span>
+                        </div>
+                        <div className="flex flex-col border-x border-[var(--color-border)]">
+                          <span className="text-[0.65rem] text-[var(--color-brand-red)] font-600 uppercase">Média Recomendada</span>
+                          <span className="text-xs font-700 text-[var(--color-text)]">{formatCurrency(bmark.service.recommendedRate)}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[0.65rem] text-[var(--color-text-muted)] uppercase">Teto Comum</span>
+                          <span className="text-xs font-700 text-[var(--color-text-secondary)]">{formatCurrency(bmark.service.maxRate)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <Info size={13} className="text-[var(--color-text-muted)] flex-shrink-0" />
+                        <span className="text-[0.7rem] text-[var(--color-text-muted)]">
+                          {bmark.statusText}. Lembre-se: tabelas não são travas fixas, servem para ancoragem e negociação.
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })()}
+
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  const proposalData = {
+                    id: Date.now().toString(),
+                    projectName: form.projectName || 'Projeto sem título',
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    form,
+                    result,
+                    benchmark: compareQuoteWithBenchmark(result.quote.recommended, form.benchmarkId)
+                  }
+                  localStorage.setItem('bob_last_proposal', JSON.stringify(proposalData))
+                  router.push('/propostas/preview')
+                }}
+              >
                 <TrendingUp size={15} className="mr-2" />
                 Gerar Proposta PDF
               </Button>

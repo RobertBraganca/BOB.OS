@@ -32,6 +32,15 @@ export type {
   UsageRights,
 } from './multipliers'
 
+export {
+  ADEGRAF_BENCHMARKS,
+  getServicesByCategory,
+  getBenchmarkServiceById,
+  compareQuoteWithBenchmark,
+} from './adegraf'
+export type { BenchmarkService } from './adegraf'
+
+
 import { calculateLayer1, type Layer1Input } from './layer1'
 import { calculateLayer2, type Layer2Input } from './layer2'
 import { calculateLayer3, type Layer3Input, type QuoteResult } from './layer3'
