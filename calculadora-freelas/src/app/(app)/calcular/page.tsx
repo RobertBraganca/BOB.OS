@@ -24,10 +24,9 @@ import {
   getBenchmarkServiceById,
   compareQuoteWithBenchmark,
 } from '@/lib/pricing'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
 import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, TrendingUp, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
