@@ -7,30 +7,28 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   Calculator,
-  User,
   Wallet,
+  User,
   FileText,
   Settings,
-  ChevronRight,
-  Zap,
+  X,
+  Sun,
+  Moon,
 } from 'lucide-react'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
-
+import { useTheme } from 'next-themes'
+import { Logo } from '@/components/ui/logo'
 
 /**
- * Sidebar — Design System BOB.OS
+ * Sidebar — Design System BOB.OS (design_handoff_bobos_redesign)
  *
- * DNA Visual:
- * - Fundo #0A0A0A (mais escuro que o body)
- * - Borda direita sutil
- * - Item ativo: fundo vermelho sólido
- * - Logo em Barlow Condensed
- * - Sem icons redondos ou coloridos — austeros
+ * Fixa em >=1024px (248px), drawer overlay abaixo disso.
+ * Item ativo: régua de 3px à esquerda + wash vermelho 10% + tipografia display.
+ * Sem recolhimento — não existe no design de referência.
  */
 
 const NAV_ITEMS = [
   {
-    group: 'PRINCIPAL',
+    group: 'Principal',
     items: [
       { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
       { href: '/calcular', icon: Calculator, label: 'Calculadora' },
@@ -38,7 +36,7 @@ const NAV_ITEMS = [
     ],
   },
   {
-    group: 'CONTA',
+    group: 'Conta',
     items: [
       { href: '/perfil', icon: User, label: 'Perfil' },
       { href: '/propostas', icon: FileText, label: 'Propostas' },
@@ -49,38 +47,55 @@ const NAV_ITEMS = [
 
 interface SidebarProps {
   className?: string
+  /** Estado do drawer em telas < lg (mobile/tablet). Ignorado em lg+, onde a sidebar é estática. */
+  open?: boolean
+  onClose?: () => void
 }
 
-function Sidebar({ className }: SidebarProps) {
+function Sidebar({ className, open = false, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = !mounted || resolvedTheme !== 'light'
 
   return (
     <aside
       className={cn(
-        'flex flex-col w-56 min-h-screen',
-        'bg-[var(--color-bg)] border-r border-[var(--color-border)] transition-colors duration-200',
-        'fixed left-0 top-0 bottom-0 z-30',
+        'fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen w-[var(--sidebar-width)] flex-shrink-0 z-40 lg:z-30 flex flex-col print:hidden',
+        'bg-[var(--color-surface)] border-r border-[var(--color-border)]',
+        'transition-transform duration-[var(--duration-slow)] ease-in-out select-none',
+        open ? 'translate-x-0' : '-translate-x-full',
+        'lg:translate-x-0',
         className
       )}
     >
       {/* Header com Logo */}
-      <div className="flex items-center gap-2 px-6 h-14 border-b border-[var(--color-border-subtle)]">
-        <div className="flex items-center justify-center w-6 h-6 bg-[var(--color-brand-red)] rounded-[var(--radius-sm)]">
-          <Zap size={13} className="text-white" fill="white" />
-        </div>
-        <Link href="/" className="font-display font-900 text-sm tracking-tight text-[var(--color-text)]">
-          BOB.OS
+      <div className="flex items-center justify-between gap-2 h-[var(--sidebar-header-height)] border-b border-[var(--color-border)] px-[18px]">
+        <Link href="/" className="flex items-center gap-2.5 overflow-hidden group" title="Ir para o topo · página inicial">
+          <Logo height={32} className="group-hover:scale-105 transition-transform" />
         </Link>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="lg:hidden flex items-center justify-center w-8 h-8 border border-[var(--color-border)] rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-colors"
+          title="Fechar menu"
+          aria-label="Fechar menu"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 flex flex-col gap-6 overflow-y-auto">
+      <nav className="flex-1 py-[18px] px-3 flex flex-col gap-[22px] overflow-y-auto overflow-x-hidden">
         {NAV_ITEMS.map((group) => (
           <div key={group.group} className="flex flex-col gap-1">
-            <span className="px-3 text-[0.65rem] font-600 tracking-wider text-[var(--color-text-muted)] uppercase mb-1">
-              {group.group}
-            </span>
-
+            <span className="label-uppercase px-2.5 pb-2">{group.group}</span>
             {group.items.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -89,15 +104,17 @@ function Sidebar({ className }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => onClose?.()}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-xs font-500 transition-colors',
+                    'flex items-center gap-3 w-full min-h-11 px-3 rounded-r-[var(--radius-md)] font-display uppercase tracking-[0.01em] text-left transition-colors',
+                    'border-l-[3px]',
                     isActive
-                      ? 'bg-[var(--color-brand-red)] text-white font-600'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]'
+                      ? 'border-l-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-text)] font-800 text-base'
+                      : 'border-l-transparent text-[var(--color-text-secondary)] font-700 text-base hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
                   )}
                 >
-                  <Icon size={15} className="flex-shrink-0" />
-                  <span>{item.label}</span>
+                  <Icon size={18} className={cn('flex-shrink-0', isActive && 'text-[var(--color-brand-red)]')} />
+                  <span className="truncate">{item.label}</span>
                 </Link>
               )
             })}
@@ -106,19 +123,25 @@ function Sidebar({ className }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 pb-4 pt-3 border-t border-[var(--color-border-subtle)] flex flex-col gap-3">
-        <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs text-[var(--color-text-muted)] font-500">Tema visual</span>
-          <ThemeToggle />
-        </div>
-        <div className="px-2.5 py-2.5 rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)]">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-4 h-4 rounded-full bg-[var(--color-brand-yellow)] flex items-center justify-center text-black text-[0.55rem] font-900 flex-shrink-0">
+      <div className="px-4 pt-[14px] pb-[18px] border-t border-[var(--color-border)] flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className="flex items-center justify-between gap-2 min-h-11 px-3 border border-[var(--color-border)] rounded-[var(--radius-md)] text-[var(--color-text-secondary)] text-xs font-600 tracking-wide uppercase hover:text-[var(--color-text)] hover:border-[var(--color-text-muted)] transition-colors"
+          aria-label="Alternar tema"
+        >
+          {isDark ? 'Modo escuro' : 'Modo claro'}
+          {isDark ? <Moon size={16} /> : <Sun size={16} />}
+        </button>
+
+        <div className="p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)] flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-brand-yellow)] text-black font-display font-900 text-[10px]">
               V1
-            </div>
-            <span className="text-xs font-600 text-[var(--color-text)]">Plano Gratuito</span>
+            </span>
+            <span className="text-xs font-700 text-[var(--color-text)]">Plano gratuito</span>
           </div>
-          <p className="text-[0.65rem] text-[var(--color-text-muted)] leading-relaxed">
+          <p className="text-[0.6875rem] leading-relaxed text-[var(--color-text-muted)]">
             Motor em 3 camadas sempre gratuito.
           </p>
         </div>

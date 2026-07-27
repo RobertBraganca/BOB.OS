@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // Permite HMR/dev tools ao acessar via IP de rede (ex.: testar responsividade em celular real)
+  allowedDevOrigins: ['192.168.1.96'],
+
   // Otimização de imagens
   images: {
     formats: ['image/avif', 'image/webp'],

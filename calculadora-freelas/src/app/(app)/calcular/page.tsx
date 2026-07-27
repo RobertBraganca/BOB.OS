@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import type { Metadata } from 'next'
+import { useEffect, useState } from 'react'
 import { PageHeader, PageContent } from '@/components/layout/shell'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,12 +18,15 @@ import {
   type ClientSize,
   type UsageRights,
   type PricingMethod,
+  type TaxRegime,
   calculateFullQuote,
+  calculateLayer1,
   getServicesByCategory,
   getBenchmarkServiceById,
   compareQuoteWithBenchmark,
 } from '@/lib/pricing'
 import { formatCurrency, cn } from '@/lib/utils'
+import { DEFAULT_COSTS, loadCosts, loadProfile, saveLastProposal, totalMonthlyExpenses, type SavedCosts } from '@/lib/storage'
 import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, TrendingUp, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -50,9 +52,6 @@ const PRICING_METHODS: { value: PricingMethod; label: string; description: strin
   { value: 'retainer',    label: 'Retainer/Mensal', description: 'Gestão de tráfego, manutenção, consultoria contínua' },
 ]
 
-// Valor-hora padrão para demonstração (em produção virá do perfil salvo)
-const DEMO_HOURLY_RATE = 64.8
-
 // ─── Estado inicial ───────────────────────────────────────────────────────────
 
 const INITIAL_STATE = {
@@ -76,39 +75,37 @@ function OptionCard({
   onClick,
   title,
   description,
-  badge,
 }: {
   selected: boolean
   onClick: () => void
   title: string
   description?: string
-  badge?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'flex flex-col gap-1.5 p-4 rounded-[var(--radius-lg)] border text-left w-full',
+        'flex flex-col gap-2 p-4 sm:p-5 rounded-[var(--radius-lg)] border text-left w-full',
         'transition-all duration-150 cursor-pointer',
         selected
-          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/8'
+          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10'
           : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-text-muted)]'
       )}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 w-full">
         <span className={cn(
-          'text-sm font-600',
-          selected ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'
+          'text-base font-700 leading-snug',
+          selected ? 'text-[var(--color-text)] font-800' : 'text-[var(--color-text)]'
         )}>
           {title}
         </span>
         {selected && (
-          <CheckCircle2 size={14} className="text-[var(--color-brand-red)] flex-shrink-0" />
+          <CheckCircle2 size={18} className="text-[var(--color-brand-red)] flex-shrink-0" />
         )}
       </div>
       {description && (
-        <span className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+        <span className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed font-400">
           {description}
         </span>
       )}
@@ -122,7 +119,27 @@ export default function CalcularPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [form, setForm] = useState(INITIAL_STATE)
+  const [costs, setCosts] = useState<SavedCosts>(DEFAULT_COSTS)
+  const [taxRegime, setTaxRegime] = useState<TaxRegime>('mei')
   const serviceCategories = getServicesByCategory()
+  const selectedService = getBenchmarkServiceById(form.benchmarkId)
+
+  // Carrega custos (/custos) e regime tributário (/perfil) salvos pelo usuário.
+  // Até lá, usa os padrões — o motor nunca fica sem valor-hora para calcular.
+  useEffect(() => {
+    setCosts(loadCosts())
+    const profile = loadProfile()
+    if (profile) setTaxRegime(profile.taxRegime)
+  }, [])
+
+  const hourlyRate = calculateLayer1({
+    monthlyExpenses: totalMonthlyExpenses(costs),
+    desiredSalary: costs.desiredSalary,
+    technicalReserve: costs.technicalReserve,
+    profitMargin: costs.profitMargin / 100,
+    availableHours: costs.availableHours,
+    billablePercentage: costs.billablePercentage,
+  }).realHourlyRate
 
   const update = <K extends keyof typeof INITIAL_STATE>(key: K, value: typeof INITIAL_STATE[K]) =>
     setForm(prev => ({ ...prev, [key]: value }))
@@ -151,12 +168,12 @@ export default function CalcularPage() {
   // Calcula resultado ao chegar no step 7
   const result = currentStep === 7 ? calculateFullQuote({
     layer1: {
-      monthlyExpenses: 450,
-      desiredSalary: 5000,
-      technicalReserve: 500,
-      profitMargin: 0.15,
-      availableHours: 176,
-      billablePercentage: 60,
+      monthlyExpenses: totalMonthlyExpenses(costs),
+      desiredSalary: costs.desiredSalary,
+      technicalReserve: costs.technicalReserve,
+      profitMargin: costs.profitMargin / 100,
+      availableHours: costs.availableHours,
+      billablePercentage: costs.billablePercentage,
     },
     layer2: {
       pricingMethod: form.pricingMethod,
@@ -170,7 +187,7 @@ export default function CalcularPage() {
       urgency: form.urgency,
       clientSize: form.clientSize,
       usageRights: form.usageRights,
-      taxRegime: 'mei',
+      taxRegime,
       extraMargin: form.extraMargin / 100,
     },
   }) : null
@@ -185,7 +202,7 @@ export default function CalcularPage() {
 
       <PageContent>
         {/* Step indicator */}
-        <div className="mb-8 overflow-x-auto pb-2">
+        <div className="mb-8 -mx-6 sm:mx-0 px-6 sm:px-0 overflow-x-auto pb-2">
           <StepIndicator steps={STEPS} currentStep={currentStep} />
         </div>
 
@@ -222,9 +239,9 @@ export default function CalcularPage() {
                       </optgroup>
                     ))}
                   </select>
-                  {getBenchmarkServiceById(form.benchmarkId) && (
+                  {selectedService && (
                     <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mt-0.5">
-                      {getBenchmarkServiceById(form.benchmarkId)?.description}
+                      {selectedService.description}
                     </p>
                   )}
                 </div>
@@ -295,11 +312,11 @@ export default function CalcularPage() {
                     <div className="flex flex-col gap-0.5">
                       <span className="label-uppercase">Custo de mão de obra (estimativa)</span>
                       <span className="text-xs text-[var(--color-text-muted)]">
-                        {form.estimatedHours}h × {formatCurrency(DEMO_HOURLY_RATE)}/h
+                        {form.estimatedHours}h × {formatCurrency(hourlyRate)}/h
                       </span>
                     </div>
                     <span className="numeric-display text-xl font-900 text-[var(--color-text)]">
-                      {formatCurrency(form.estimatedHours * DEMO_HOURLY_RATE)}
+                      {formatCurrency(form.estimatedHours * hourlyRate)}
                     </span>
                   </div>
                 )}
@@ -323,7 +340,7 @@ export default function CalcularPage() {
                       key={key}
                       selected={form.complexity === key}
                       onClick={() => update('complexity', key)}
-                      title={`${val.label} — ×${val.multiplier}`}
+                      title={`${val.label} · ×${val.multiplier}`}
                       description={val.description}
                     />
                   ))}
@@ -348,7 +365,7 @@ export default function CalcularPage() {
                       key={key}
                       selected={form.urgency === key}
                       onClick={() => update('urgency', key)}
-                      title={`${val.label} — ×${val.multiplier}`}
+                      title={`${val.label} · ×${val.multiplier}`}
                       description={val.description}
                     />
                   ))}
@@ -373,7 +390,7 @@ export default function CalcularPage() {
                       key={key}
                       selected={form.clientSize === key}
                       onClick={() => update('clientSize', key)}
-                      title={`${val.label} — ×${val.multiplier}`}
+                      title={`${val.label} · ×${val.multiplier}`}
                       description={val.description}
                     />
                   ))}
@@ -398,7 +415,7 @@ export default function CalcularPage() {
                       key={key}
                       selected={form.usageRights === key}
                       onClick={() => update('usageRights', key)}
-                      title={`${val.label} — ×${val.multiplier}`}
+                      title={`${val.label} · ×${val.multiplier}`}
                       description={val.description}
                     />
                   ))}
@@ -525,12 +542,12 @@ export default function CalcularPage() {
                     )}
                   >
                     <div className="flex flex-col gap-0.5">
-                      <span className={cn('label-uppercase', tier.accent === 'red' ? 'text-[var(--color-brand-red)]' : '')}>
+                      <span className={cn('label-uppercase font-800', tier.accent === 'red' ? 'text-[var(--color-brand-red)]' : '')}>
                         {tier.label}
                       </span>
-                      <span className="text-[0.65rem] text-[var(--color-text-muted)]">{tier.sublabel}</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">{tier.sublabel}</span>
                     </div>
-                    <span className={cn('numeric-display font-900 text-3xl leading-none', tier.textColor)}>
+                    <span className={cn('font-display font-900 text-3xl sm:text-4xl leading-tight tracking-tight mt-1', tier.textColor)}>
                       {formatCurrency(tier.value)}
                     </span>
                   </div>
@@ -581,7 +598,7 @@ export default function CalcularPage() {
                         <span className="text-[var(--color-text-muted)]">{m.label}</span>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[0.65rem] text-[var(--color-text-muted)]">{m.detail.label}</span>
-                          <Badge variant={m.detail.multiplier > 1 ? 'warning' : m.detail.multiplier < 1 ? 'default' : 'default'}>
+                          <Badge variant={m.detail.multiplier > 1 ? 'warning' : 'default'}>
                             ×{m.detail.multiplier}
                           </Badge>
                         </div>
@@ -640,15 +657,15 @@ export default function CalcularPage() {
                 size="lg"
                 className="w-full"
                 onClick={() => {
-                  const proposalData = {
+                  saveLastProposal({
                     id: Date.now().toString(),
                     projectName: form.projectName || 'Projeto sem título',
                     date: new Date().toLocaleDateString('pt-BR'),
+                    createdAt: new Date().toISOString(),
                     form,
                     result,
-                    benchmark: compareQuoteWithBenchmark(result.quote.recommended, form.benchmarkId)
-                  }
-                  localStorage.setItem('bob_last_proposal', JSON.stringify(proposalData))
+                    benchmark: compareQuoteWithBenchmark(result.quote.recommended, form.benchmarkId),
+                  })
                   router.push('/propostas/preview')
                 }}
               >

@@ -93,11 +93,10 @@ export function calculateLayer3(input: Layer3Input, minimumPrice: number): Quote
   // Preço premium (referência de valor percebido alto — 30% acima do recomendado)
   const premium = recommended * 1.3
 
-  // Garante que o minimum seja respeitado
-  const safeMinimum = Math.min(minimumPrice, recommended)
-
   return {
-    minimum: safeMinimum,
+    // Piso técnico real (Camada 1 × horas) — nunca é reescrito pelo recomendado,
+    // mesmo quando os multiplicadores empurram o preço abaixo dele (ver `belowFloor`).
+    minimum: minimumPrice,
     recommended,
     premium,
     multiplierDetail: {

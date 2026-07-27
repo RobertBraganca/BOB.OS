@@ -56,7 +56,7 @@ function Badge({ className, variant, dot, children, ...props }: BadgeProps) {
             variant === 'success' && 'bg-[var(--color-success)]',
             variant === 'warning' && 'bg-[var(--color-warning)]',
             variant === 'danger' && 'bg-[var(--color-danger)]',
-            !variant || variant === 'default' && 'bg-[var(--color-text-muted)]',
+            (!variant || variant === 'default') && 'bg-[var(--color-text-muted)]',
           )}
         />
       )}

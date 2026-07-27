@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
-import type { Metadata } from 'next'
+import React, { useState, useCallback, useEffect } from 'react'
 import { PageHeader, PageContent } from '@/components/layout/shell'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,8 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { calculateLayer1 } from '@/lib/pricing'
 import { formatCurrency } from '@/lib/utils'
+import { DEFAULT_COSTS, loadCosts, saveCosts, type SavedExpense } from '@/lib/storage'
 import type { ExpenseItem } from '@/schemas'
-import { Plus, Trash2, Info, TrendingUp, Clock } from 'lucide-react'
+import { Plus, Trash2, Info, TrendingUp, Clock, Sparkles } from 'lucide-react'
 
 // ─── Tipos locais ─────────────────────────────────────────────────────────────
 
@@ -19,20 +19,40 @@ interface ExpenseItemLocal extends ExpenseItem {
   id: string
 }
 
-const DEFAULT_EXPENSES: ExpenseItemLocal[] = [
-  { id: '1', label: 'Internet', amount: 150, category: 'structure' },
-  { id: '2', label: 'Adobe Creative Cloud', amount: 300, category: 'software' },
-]
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function CustosPage() {
-  const [expenses, setExpenses] = useState<ExpenseItemLocal[]>(DEFAULT_EXPENSES)
-  const [desiredSalary, setDesiredSalary] = useState(5000)
-  const [technicalReserve, setTechnicalReserve] = useState(500)
-  const [profitMargin, setProfitMargin] = useState(15)
-  const [availableHours, setAvailableHours] = useState(176)
-  const [billablePercentage, setBillablePercentage] = useState(60)
+  const [expenses, setExpenses] = useState<ExpenseItemLocal[]>(DEFAULT_COSTS.expenses as ExpenseItemLocal[])
+  const [desiredSalary, setDesiredSalary] = useState(DEFAULT_COSTS.desiredSalary)
+  const [technicalReserve, setTechnicalReserve] = useState(DEFAULT_COSTS.technicalReserve)
+  const [profitMargin, setProfitMargin] = useState(DEFAULT_COSTS.profitMargin)
+  const [availableHours, setAvailableHours] = useState(DEFAULT_COSTS.availableHours)
+  const [billablePercentage, setBillablePercentage] = useState(DEFAULT_COSTS.billablePercentage)
+  const [saved, setSaved] = useState(false)
+
+  // Restaura a última configuração salva (se houver) ao montar
+  useEffect(() => {
+    const costs = loadCosts()
+    setExpenses(costs.expenses as ExpenseItemLocal[])
+    setDesiredSalary(costs.desiredSalary)
+    setTechnicalReserve(costs.technicalReserve)
+    setProfitMargin(costs.profitMargin)
+    setAvailableHours(costs.availableHours)
+    setBillablePercentage(costs.billablePercentage)
+  }, [])
+
+  const handleSave = () => {
+    saveCosts({
+      expenses: expenses as SavedExpense[],
+      desiredSalary,
+      technicalReserve,
+      profitMargin,
+      availableHours,
+      billablePercentage,
+    })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
 
   // Cálculo em tempo real (< 300ms — PRD RNF-01)
   const result = calculateLayer1({
@@ -79,7 +99,26 @@ export default function CustosPage() {
         description="Configure seus custos mensais para calcular seu valor-hora real. Este dado é salvo no seu perfil e usado em todos os orçamentos."
       />
 
-      <PageContent className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+      <PageContent className="flex flex-col gap-6">
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-yellow)]/15 text-[var(--color-brand-yellow)]">
+              <Sparkles size={18} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="label-uppercase text-[var(--color-brand-red)]">Base operacional</span>
+              <h2 className="font-display font-800 text-lg uppercase tracking-tight text-[var(--color-text)]">
+                Seu valor-hora real começa aqui
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                Ajuste despesas, horas faturáveis e reservas para construir uma base técnica sólida antes de precificar qualquer projeto.
+              </p>
+            </div>
+          </div>
+          <Badge variant="warning">MVP · alinhado ao PRD</Badge>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
 
         {/* ─── Coluna principal ──────────────────────────────────────────────── */}
         <div className="flex flex-col gap-6">
@@ -158,7 +197,7 @@ export default function CustosPage() {
               />
               <CurrencyInput
                 label="Reserva técnica / mês"
-                hint="Fundo de emergência, férias, 13º — sugestão: 10% do pró-labore"
+                hint="Fundo de emergência, férias, 13º · sugestão: 10% do pró-labore"
                 value={technicalReserve}
                 onChange={setTechnicalReserve}
               />
@@ -321,10 +360,11 @@ export default function CustosPage() {
             </CardContent>
           </Card>
 
-          <Button className="w-full" size="lg">
+          <Button className="w-full" size="lg" onClick={handleSave}>
             <TrendingUp size={15} className="mr-2" />
-            Salvar configuração
+            {saved ? 'Configuração salva' : 'Salvar configuração'}
           </Button>
+        </div>
         </div>
 
       </PageContent>

@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     'fotógrafo freelancer',
     'motion designer',
   ],
-  authors: [{ name: 'BEEKOFF®', url: 'https://beekoff.com.br' }],
-  creator: 'BEEKOFF®',
+  authors: [{ name: 'O DESIGNER BOB®', url: 'https://odesignerbob.com.br' }],
+  creator: 'O DESIGNER BOB®',
   openGraph: {
     title: 'BOB.OS — Calculadora de Freelas',
     description: 'Precifique com segurança técnica e comercial. Motor de cálculo em 3 camadas para profissionais criativos.',
@@ -51,7 +51,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
           rel="stylesheet"
         />
       </head>

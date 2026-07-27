@@ -1,4 +1,12 @@
 import React from 'react'
+import Link from 'next/link'
+import { Logo } from '@/components/ui/logo'
+
+const BULLETS = [
+  { color: 'var(--color-brand-red)', text: 'Valor-hora real calculado sobre os seus custos' },
+  { color: 'var(--color-brand-yellow)', text: 'Multiplicadores de complexidade, urgência e direitos' },
+  { color: 'var(--color-brand-green)', text: 'Gross-up tributário por regime · MEI, Simples, PJ, PF' },
+]
 
 export default function AuthLayout({
   children,
@@ -6,38 +14,33 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] flex">
-      {/* Coluna esquerda — statement editorial */}
-      <div
-        className="hidden lg:flex flex-col justify-between w-1/2 bg-[var(--color-brand-red)] p-12"
-        aria-hidden="true"
-      >
-        <div className="flex items-center gap-2">
-          <span className="font-display font-900 text-2xl uppercase tracking-tight text-white">BOB.OS</span>
+    <div className="min-h-screen bg-[var(--color-bg)] grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+      <div className="hidden lg:flex flex-col justify-between gap-10 p-12 bg-[var(--color-surface)] border-r border-[var(--color-border)]">
+        <Link href="/" className="flex items-center gap-2">
+          <Logo height={28} />
+        </Link>
+
+        <div className="flex flex-col gap-5">
+          <h2 className="text-display-lg text-[var(--color-text)] max-w-[18ch]">
+            O preço certo não é o mais alto. É o defensável.
+          </h2>
+          <div className="flex flex-col gap-3">
+            {BULLETS.map((b) => (
+              <div key={b.text} className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
+                <span className="w-1.5 h-1.5 flex-shrink-0" style={{ backgroundColor: b.color }} />
+                {b.text}
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <blockquote className="text-display-lg text-white leading-none">
-            Precifique com fundamento.<br />
-            <span className="text-black">Não no sentimento.</span>
-          </blockquote>
-          <p className="text-sm text-white/70 max-w-sm leading-relaxed">
-            Sistema Operacional de Precificação para Profissionais Criativos.
-            Motor de cálculo em 3 camadas que mostra o que você realmente precisa cobrar.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-xs text-white/50 uppercase tracking-wider font-600">BEEKOFF®</span>
-          <span className="text-xs text-white/30">Sistema Operacional de Precificação · V1</span>
-        </div>
+        <span className="text-2xs tracking-widest uppercase text-[var(--color-text-muted)]">
+          BOB.OS · Calculadora de Freelas
+        </span>
       </div>
 
-      {/* Coluna direita — formulário */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          {children}
-        </div>
+      <div className="flex items-center justify-center p-6 sm:p-8 lg:p-12">
+        <div className="w-full max-w-[400px]">{children}</div>
       </div>
     </div>
   )

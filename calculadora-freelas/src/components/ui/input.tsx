@@ -97,6 +97,18 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
     const [displayValue, setDisplayValue] = React.useState(
       value > 0 ? value.toFixed(2).replace('.', ',') : ''
     )
+    // Rastreia o último valor emitido por este input para diferenciar uma
+    // mudança externa de `value` (ex.: custos carregados do localStorage após
+    // o mount) — que deve resincronizar o texto — de uma mudança originada
+    // pela própria digitação, que já está refletida em `displayValue`.
+    const lastEmitted = React.useRef(value)
+
+    React.useEffect(() => {
+      if (value !== lastEmitted.current) {
+        setDisplayValue(value > 0 ? value.toFixed(2).replace('.', ',') : '')
+        lastEmitted.current = value
+      }
+    }, [value])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value.replace(/[^\d,]/g, '')
@@ -104,8 +116,10 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
 
       const numeric = parseFloat(raw.replace(',', '.'))
       if (!isNaN(numeric)) {
+        lastEmitted.current = numeric
         onChange(numeric)
       } else if (raw === '' || raw === ',') {
+        lastEmitted.current = 0
         onChange(0)
       }
     }

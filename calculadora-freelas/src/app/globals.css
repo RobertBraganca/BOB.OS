@@ -4,7 +4,7 @@
    BOB.OS — Design System Tokens
    Calculadora de Freelas — Sistema Operacional de Precificação
    Fundamentado no Brandboard Bob Designer v1.0
-   Fontes carregadas via <link> no layout.tsx (Barlow Condensed + Inter)
+   Fontes carregadas via <link> no layout.tsx (Barlow + Barlow Condensed + Inter + JetBrains Mono)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 
@@ -38,7 +38,8 @@
   --color-info: #007BFF;
 
   /* ─── Typography — Brandboard: "Tipografia forte, direta e sem floreios" ─── */
-  --font-display: 'Barlow Condensed', 'Arial Black', sans-serif;
+  --font-brand: 'Barlow', 'Barlow Condensed', 'Arial Black', sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow', 'Arial Black', sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
@@ -86,7 +87,7 @@
   --space-24: 6rem;
   --space-32: 8rem;
 
-  /* ─── Border Radius ──────────────────────────────────────────────────────── */
+  /* ─── Border Radius — small and hard. No pill shapes except status dots/pills. */
   --radius-none: 0;
   --radius-sm: 2px;
   --radius-md: 4px;
@@ -94,6 +95,17 @@
   --radius-xl: 8px;
   --radius-2xl: 12px;
   --radius-full: 9999px;
+
+  /* ─── Layout ─────────────────────────────────────────────────────────────── */
+  --sidebar-width: 15.5rem;
+  --topbar-height: 4rem;
+  --sidebar-header-height: 3.5rem;
+  --page-padding-x: 2rem;
+  --content-max-width: 77.5rem;
+
+  /* ─── Borders ────────────────────────────────────────────────────────────── */
+  --border-width: 1px;
+  --border-accent-width: 2px;
 
   /* ─── Transitions ────────────────────────────────────────────────────────── */
   --duration-fast: 100ms;
@@ -118,6 +130,13 @@
   --color-text-secondary: #52525B;
   --color-text-muted: #71717A;
   --color-text-disabled: #A1A1AA;
+
+  /* ─── Interaction ────────────────────────────────────────────────────────── */
+  --color-focus-ring: var(--color-brand-red);
+  --color-selection-bg: var(--color-brand-red);
+  --color-selection-fg: #FFFFFF;
+  --color-link: var(--color-brand-red);
+  --color-link-hover: #CC0000;
 }
 
 .dark {
@@ -152,11 +171,29 @@ html {
 
 
 body {
-  background-color: var(--color-bg);
+  /* O único glow do produto já vive na hero da landing (page.tsx), como blur
+     posicionado atrás do conteúdo — Brandboard: "colour is a decision, never
+     decoration". O corpo do app fica em bloco de cor sólida, sem vazar tingimento
+     para as telas internas (dashboard, calculadora, etc.). */
+  background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.link {
+  color: var(--color-link);
+  transition: color var(--duration-base) var(--ease-out);
+}
+
+a.link:hover {
+  color: var(--color-link-hover);
 }
 
 /* ─── Scrollbar Styling ───────────────────────────────────────────────────── */
@@ -182,14 +219,14 @@ body {
 /* ─── Selection ───────────────────────────────────────────────────────────── */
 
 ::selection {
-  background-color: var(--color-brand-red);
-  color: #fff;
+  background-color: var(--color-selection-bg);
+  color: var(--color-selection-fg);
 }
 
 /* ─── Focus ───────────────────────────────────────────────────────────────── */
 
 :focus-visible {
-  outline: 2px solid var(--color-brand-red);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -197,6 +234,10 @@ body {
 
 .font-display {
   font-family: var(--font-display);
+}
+
+.font-brand {
+  font-family: var(--font-brand);
 }
 
 .text-display-2xl {

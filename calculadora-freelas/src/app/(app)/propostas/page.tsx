@@ -6,21 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/utils'
+import { loadLastProposal, type SavedProposal } from '@/lib/storage'
 import Link from 'next/link'
 import { Calculator, FileText, ArrowRight, Printer, Calendar } from 'lucide-react'
 
 export default function PropostasPage() {
-  const [proposals, setProposals] = useState<any[]>([])
+  const [proposals, setProposals] = useState<SavedProposal[]>([])
 
   useEffect(() => {
-    const saved = localStorage.getItem('bob_last_proposal')
-    if (saved) {
-      try {
-        setProposals([JSON.parse(saved)])
-      } catch (e) {
-        console.error('Erro ao carregar propostas', e)
-      }
-    }
+    const last = loadLastProposal()
+    if (last) setProposals([last])
   }, [])
 
   return (
@@ -41,13 +36,15 @@ export default function PropostasPage() {
 
       <PageContent>
         {proposals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 border border-dashed border-[var(--color-border)] rounded-[var(--radius-lg)]">
-            <FileText size={28} className="text-[var(--color-text-muted)] mb-4" />
-            <h3 className="font-display font-800 text-sm uppercase tracking-wide text-[var(--color-text-muted)] mb-1">
+          <div className="flex flex-col items-center justify-center py-20 px-6 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)] mb-4">
+              <FileText size={24} />
+            </div>
+            <h3 className="font-display font-800 text-lg uppercase tracking-tight text-[var(--color-text)] mb-2">
               Nenhuma proposta ainda
             </h3>
-            <p className="text-xs text-[var(--color-text-muted)] text-center max-w-xs leading-relaxed mb-5">
-              Gere seu primeiro orçamento completo para criar uma proposta exportável em PDF.
+            <p className="text-sm text-[var(--color-text-secondary)] max-w-md leading-relaxed mb-6">
+              Gere seu primeiro orçamento completo para transformar a metodologia em uma proposta comercial pronta para aprovação ou exportação.
             </p>
             <Button asChild size="md" variant="secondary">
               <Link href="/calcular" className="flex items-center gap-2">
@@ -58,6 +55,15 @@ export default function PropostasPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-4 max-w-3xl">
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-1">
+                <span className="label-uppercase text-[var(--color-brand-red)]">Documentos comerciais</span>
+                <h3 className="font-display font-800 text-lg uppercase tracking-tight text-[var(--color-text)]">
+                  Propostas prontas para envio
+                </h3>
+              </div>
+              <Badge variant="warning">Baseada na metodologia 3 camadas</Badge>
+            </div>
             {proposals.map(p => (
               <Card key={p.id} accent="red" className="hover:border-[var(--color-text-muted)] transition-colors">
                 <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

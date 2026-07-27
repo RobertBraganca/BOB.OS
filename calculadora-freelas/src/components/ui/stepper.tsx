@@ -22,7 +22,7 @@ interface StepIndicatorProps {
 
 function StepIndicator({ steps, currentStep, className }: StepIndicatorProps) {
   return (
-    <nav aria-label="Progresso" className={cn('flex items-start gap-0', className)}>
+    <nav aria-label="Progresso" className={cn('flex items-start gap-0 w-max min-w-full', className)}>
       {steps.map((step, index) => {
         const isCompleted = index < currentStep
         const isActive = index === currentStep
@@ -30,14 +30,14 @@ function StepIndicator({ steps, currentStep, className }: StepIndicatorProps) {
 
         return (
           <React.Fragment key={index}>
-            <div className="flex flex-col items-center gap-1.5 min-w-0">
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
               {/* Número do step */}
               <div
                 className={cn(
-                  'flex items-center justify-center',
+                  'flex items-center justify-center flex-shrink-0',
                   'w-8 h-8 rounded-[var(--radius-md)]',
                   'font-display font-900 text-sm',
-                  'transition-colors duration-200',
+                  'transition-colors duration-[var(--duration-base)]',
                   isCompleted && 'bg-[var(--color-brand-red)] text-white',
                   isActive && 'bg-[var(--color-brand-red)] text-white ring-2 ring-[var(--color-brand-red)] ring-offset-2 ring-offset-[var(--color-bg)]',
                   isUpcoming && 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]',
@@ -67,10 +67,10 @@ function StepIndicator({ steps, currentStep, className }: StepIndicatorProps) {
 
             {/* Conector entre steps */}
             {index < steps.length - 1 && (
-              <div className="flex-1 flex items-start pt-4 min-w-[16px]">
+              <div className="flex-1 flex items-start pt-4 min-w-[24px]">
                 <div
                   className={cn(
-                    'w-full h-px transition-colors duration-300',
+                    'w-full h-px transition-colors duration-[var(--duration-slow)]',
                     isCompleted ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-border)]',
                   )}
                 />
