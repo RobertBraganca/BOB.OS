@@ -8,3 +8,11 @@ build
 .DS_Store
 *.log
 .gemini
+
+# Ferramentas locais de agente e material de referência de design — não fazem
+# parte do produto e não devem ser versionados.
+.claude/
+.agents/
+BOB.OS Design System/
+BOB.OS UI redesign/
+design_handoff_bobos_redesign/
