@@ -81,8 +81,12 @@ export function RegisterForm() {
     router.push('/verificar')
   }
 
-  const handleGoogle = () => {
-    alert('Login com Google ainda não está disponível — em estudo para uma integração gratuita. Use e-mail e senha por enquanto.')
+  const handleGoogle = async () => {
+    const supabase = createClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
+    })
   }
 
   return (
