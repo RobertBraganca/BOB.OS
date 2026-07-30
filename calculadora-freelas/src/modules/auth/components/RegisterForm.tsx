@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { ArrowRight, AlertTriangle } from 'lucide-react'
+import { createClient } from '@/shared/lib/client'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -28,7 +29,7 @@ export function RegisterForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
@@ -46,14 +47,38 @@ export function RegisterForm() {
     }
 
     setLoading(true)
-    setTimeout(() => {
-      localStorage.setItem(
-        'bob_user_session',
-        JSON.stringify({ name, email, role: 'PRO', loggedAt: new Date().toISOString() })
+    const supabase = createClient()
+    const { data, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+      },
+    })
+    setLoading(false)
+
+    if (authError) {
+      setError(
+        authError.message.includes('already registered') || authError.message.includes('User already registered')
+          ? 'Este e-mail já tem conta. Tente entrar.'
+          : authError.message
       )
-      localStorage.setItem('bob_pending_verification', email)
-      router.push('/verificar')
-    }, 400)
+      return
+    }
+
+    localStorage.setItem('bob_pending_verification', email)
+
+    // Se a confirmação de e-mail estiver desativada no projeto Supabase, o
+    // signUp já devolve uma sessão ativa — nesse caso pula direto pro onboarding.
+    if (data.session) {
+      localStorage.removeItem('bob_pending_verification')
+      router.push('/onboarding')
+      router.refresh()
+      return
+    }
+
+    router.push('/verificar')
   }
 
   const handleGoogle = () => {

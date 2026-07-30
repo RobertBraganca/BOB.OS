@@ -72,37 +72,40 @@ export default function LandingPage() {
       </header>
 
       {/* ─── Hero ────────────────────────────────────────────────────────── */}
-      <section className="max-w-[1120px] mx-auto px-5 pt-16 pb-14 flex flex-col gap-7">
-        <div className="inline-flex items-center gap-2.5 self-start pl-2 pr-3 py-1.5 border border-[var(--color-border)] rounded-full bg-[var(--color-surface)]">
-          <span className="w-[7px] h-[7px] rounded-full bg-[var(--color-brand-green)] flex-shrink-0" />
-          <span className="text-2xs font-700 tracking-widest uppercase text-[var(--color-text-secondary)]">
-            Motor de 3 camadas · sempre gratuito
-          </span>
-        </div>
-        <h1 className="text-display-xl text-[var(--color-text)] max-w-[20ch]">
-          Quanto você <span className="text-[var(--color-brand-red)]">realmente</span> vale?
-        </h1>
-        <p className="max-w-[56ch] leading-relaxed text-[var(--color-text-secondary)]" style={{ fontSize: '1.3rem' }}>
-          Pare de precificar no sentimento. O BOB.OS calcula seu valor-hora real, aplica multiplicadores de mercado e devolve um orçamento que você consegue defender na frente do cliente.
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/cadastro"
-            className="flex items-center gap-2.5 h-[52px] px-[26px] bg-[var(--color-brand-red)] text-white font-display font-900 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
-            style={{ boxShadow: '0 8px 32px rgba(255,0,0,.28)' }}
-          >
-            Criar conta grátis
-            <ArrowRight size={18} />
-          </Link>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 h-[52px] px-[22px] border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] hover:border-[var(--color-text-muted)] transition-colors"
-          >
-            Ver o produto
-          </Link>
-          <span className="text-xs text-[var(--color-text-muted)] max-w-[22ch] leading-snug">
-            Sem cartão. Sem teste expirando. Sem pegadinha.
-          </span>
+      <section className="relative overflow-hidden">
+        <div className="landing-aurora" aria-hidden="true" />
+        <div className="relative z-10 max-w-[1120px] mx-auto px-5 pt-16 pb-14 flex flex-col gap-7">
+          <div className="inline-flex items-center gap-2.5 self-start pl-2 pr-3 py-1.5 border border-[var(--color-border)] rounded-full bg-[var(--color-surface)]">
+            <span className="w-[7px] h-[7px] rounded-full bg-[var(--color-brand-green)] flex-shrink-0" />
+            <span className="text-2xs font-700 tracking-widest uppercase text-[var(--color-text-secondary)]">
+              Motor de 3 camadas · sempre gratuito
+            </span>
+          </div>
+          <h1 className="text-display-xl text-[var(--color-text)] max-w-[20ch]">
+            Quanto você <span className="text-[var(--color-brand-red)]">realmente</span> vale?
+          </h1>
+          <p className="max-w-[56ch] leading-relaxed text-[var(--color-text-secondary)]" style={{ fontSize: '1.3rem' }}>
+            Pare de precificar no sentimento. O BOB.OS calcula seu valor-hora real, aplica multiplicadores de mercado e devolve um orçamento que você consegue defender na frente do cliente.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/cadastro"
+              className="flex items-center gap-2.5 h-[52px] px-[26px] bg-[var(--color-brand-red)] text-white font-display font-900 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+              style={{ boxShadow: '0 8px 32px rgba(255,0,0,.28)' }}
+            >
+              Criar conta grátis
+              <ArrowRight size={18} />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2.5 h-[52px] px-[22px] border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] hover:border-[var(--color-text-muted)] transition-colors"
+            >
+              Ver o produto
+            </Link>
+            <span className="text-xs text-[var(--color-text-muted)] max-w-[22ch] leading-snug">
+              Sem cartão. Sem teste expirando. Sem pegadinha.
+            </span>
+          </div>
         </div>
       </section>
 

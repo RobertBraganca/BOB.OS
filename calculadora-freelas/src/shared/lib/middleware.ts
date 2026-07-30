@@ -38,14 +38,17 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Rotas que não exigem sessão: landing, autenticação e páginas institucionais.
+  // Tudo em (app) — dashboard, calculadora, custos, perfil, propostas, configurações —
+  // fica atrás do gate abaixo.
+  const PUBLIC_PATHS = ['/login', '/cadastro', '/recuperar', '/verificar', '/auth', '/termos', '/privacidade']
+  const isPublic = request.nextUrl.pathname === '/' || PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))
+
+  if (!user && !isPublic) {
+    // Sem sessão: manda para o login real (não /auth/login — a rota do produto é /login).
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/login'
+    url.searchParams.set('expired', '1')
     return NextResponse.redirect(url)
   }
 

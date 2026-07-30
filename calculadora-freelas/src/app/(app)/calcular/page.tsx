@@ -22,6 +22,7 @@ import {
 } from '@/modules/pricing/lib'
 import { formatCurrency } from '@/shared/lib/utils'
 import { DEFAULT_COSTS, loadCosts, loadProfile, saveLastProposal, totalMonthlyExpenses, type SavedCosts } from '@/shared/lib/storage'
+import { createClient } from '@/shared/lib/client'
 import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, FileText, Download, Plus, Trash2 } from 'lucide-react'
 
 const STEPS = ['Serviço', 'Tempo', 'Complexidade', 'Urgência', 'Cliente', 'Direitos', 'Extras', 'Resultado']
@@ -101,11 +102,18 @@ export default function CalcularPage() {
 
   const [costs, setCosts] = useState<SavedCosts>(DEFAULT_COSTS)
   const [taxRegime, setTaxRegime] = useState<TaxRegime>('mei')
+  const [authorName, setAuthorName] = useState<string>()
 
   useEffect(() => {
     setCosts(loadCosts())
     const profile = loadProfile()
     if (profile) setTaxRegime(profile.taxRegime)
+
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      const name = data.user?.user_metadata?.full_name as string | undefined
+      setAuthorName(name || data.user?.email)
+    })
   }, [])
 
   const layer1 = useMemo(
@@ -147,14 +155,6 @@ export default function CalcularPage() {
     setDirectCosts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
 
   const handleSaveProposal = () => {
-    let authorName: string | undefined
-    try {
-      const session = localStorage.getItem('bob_user_session')
-      if (session) authorName = JSON.parse(session).name
-    } catch {
-      // sessão inválida — segue sem nome de autor
-    }
-
     saveLastProposal({
       id: Date.now().toString(),
       projectName: projectName || 'Projeto sem título',

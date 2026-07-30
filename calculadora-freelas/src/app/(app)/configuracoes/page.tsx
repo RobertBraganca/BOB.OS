@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { PageContent } from '@/shared/components/layout/shell'
 import { loadPrefs, savePrefs, exportBackupJSON, eraseAllData, type Prefs } from '@/shared/lib/storage'
+import { createClient } from '@/shared/lib/client'
 import { Moon, Sun, Clock, Zap, Download, Trash2 } from 'lucide-react'
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
@@ -49,9 +50,11 @@ export default function ConfiguracoesPage() {
 
   const isDark = !mounted || resolvedTheme !== 'light'
 
-  const handleLogout = () => {
-    localStorage.removeItem('bob_user_session')
-    router.push('/login?expired=1')
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
   }
 
   const handleRestartOnboarding = () => {

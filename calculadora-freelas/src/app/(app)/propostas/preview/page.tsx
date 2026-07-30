@@ -207,6 +207,17 @@ function PropostaPreview() {
               Referência de mercado: ADG Brasil / Adegraf 2024-2026
             </span>
           </footer>
+
+          <div className="flex items-center justify-center gap-1.5" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #F4F4F5' }}>
+            <span style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#A1A1AA' }}>
+              Feito com
+            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- documento impresso usa sempre a variante preta, independente do tema da UI */}
+            <img src="/logo-black.svg" alt="" style={{ height: 11, width: 'auto' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 11, textTransform: 'uppercase', color: '#A1A1AA', letterSpacing: '-0.02em' }}>
+              .OS
+            </span>
+          </div>
         </div>
       </div>
 

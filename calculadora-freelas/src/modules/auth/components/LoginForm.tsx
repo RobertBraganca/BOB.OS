@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { ArrowRight, AlertTriangle } from 'lucide-react'
 import { hasSavedCosts, isOnboarded } from '@/shared/lib/storage'
+import { createClient } from '@/shared/lib/client'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -21,30 +22,22 @@ function GoogleIcon() {
   )
 }
 
+const ERROR_MESSAGES: Record<string, string> = {
+  confirm: 'O link de confirmação expirou ou já foi usado. Peça um novo e-mail de verificação.',
+}
+
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const expired = searchParams.get('expired') === '1'
+  const linkError = searchParams.get('error')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const finishLogin = (finalEmail: string) => {
-    localStorage.setItem(
-      'bob_user_session',
-      JSON.stringify({
-        name: finalEmail.split('@')[0] || 'Usuário BOB',
-        email: finalEmail || 'usuario@bob.os',
-        role: 'PRO',
-        loggedAt: new Date().toISOString(),
-      })
-    )
-    router.push(isOnboarded() || hasSavedCosts() ? '/dashboard' : '/onboarding')
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
@@ -58,7 +51,23 @@ export function LoginForm() {
     }
 
     setLoading(true)
-    setTimeout(() => finishLogin(email), 400)
+    const supabase = createClient()
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+
+    if (authError) {
+      setError(
+        authError.message.includes('Invalid login credentials')
+          ? 'E-mail ou senha incorretos.'
+          : authError.message.includes('Email not confirmed')
+          ? 'Confirme seu e-mail antes de entrar — veja o link que enviamos.'
+          : authError.message
+      )
+      return
+    }
+
+    router.push(isOnboarded() || hasSavedCosts() ? '/dashboard' : '/onboarding')
+    router.refresh()
   }
 
   const handleGoogle = () => {
@@ -80,6 +89,13 @@ export function LoginForm() {
           <span className="text-xs leading-relaxed text-[var(--color-text)]">
             Sessão encerrada por inatividade. Seus custos e propostas continuam salvos.
           </span>
+        </div>
+      )}
+
+      {linkError && ERROR_MESSAGES[linkError] && (
+        <div className="flex items-start gap-2.5 p-3.5 bg-[var(--color-brand-red)]/10 border border-[var(--color-brand-red)]/30 rounded-[var(--radius-md)]">
+          <AlertTriangle size={17} className="text-[var(--color-brand-red)] flex-shrink-0 mt-0.5" />
+          <span className="text-xs leading-relaxed text-[var(--color-text)]">{ERROR_MESSAGES[linkError]}</span>
         </div>
       )}
 

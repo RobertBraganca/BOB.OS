@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { PageContent } from '@/shared/components/layout/shell'
 import { SERVICE_AREA_LABELS, type ServiceArea } from '@/shared/schemas'
 import { loadProfile, saveProfile } from '@/shared/lib/storage'
+import { createClient } from '@/shared/lib/client'
 import { TAX_RATES, type TaxRegime } from '@/modules/pricing/lib'
 import { CheckCircle2 } from 'lucide-react'
 
@@ -19,13 +20,22 @@ export default function PerfilPage() {
 
   useEffect(() => {
     const profile = loadProfile()
-    if (!profile) return
-    setArea(profile.serviceArea as ServiceArea)
-    setRegime(profile.taxRegime)
+    if (profile) {
+      setArea(profile.serviceArea as ServiceArea)
+      setRegime(profile.taxRegime)
+    }
+
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setName((data.user?.user_metadata?.full_name as string | undefined) || '')
+      setEmail(data.user?.email || '')
+    })
   }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     saveProfile({ serviceArea: area, taxRegime: regime })
+    const supabase = createClient()
+    await supabase.auth.updateUser({ data: { full_name: name } })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -61,9 +71,10 @@ export default function PerfilPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                readOnly
+                disabled
                 placeholder="seu@email.com"
-                className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                className="h-[46px] px-3 bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] rounded-[var(--radius-md)] outline-none cursor-not-allowed"
               />
             </label>
           </div>
