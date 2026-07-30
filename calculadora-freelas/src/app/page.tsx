@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { Logo } from '@/components/ui/logo'
+import { ThemeToggle } from '@/shared/components/ui/theme-toggle'
+import { Logo } from '@/shared/components/ui/logo'
 
 /**
  * Landing — BOB.OS
@@ -25,13 +25,13 @@ const LAYERS = [
     number: 'Camada 01',
     color: 'var(--color-brand-red)',
     title: 'Custo de existência',
-    description: 'Despesas fixas, pró-labore, reserva técnica e margem divididos pelas horas que você realmente fatura. É o seu piso — nunca cobre abaixo dele.',
+    description: 'Despesas fixas, pró-labore, reserva técnica e margem divididos pelas horas que você realmente fatura. É o seu piso, nunca cobre abaixo dele.',
   },
   {
     number: 'Camada 02',
     color: 'var(--color-brand-yellow)',
     title: 'Preço do projeto',
-    description: 'Horas estimadas, revisões e custos diretos por método de cobrança — hora, diária, escopo fechado, pacote ou mensalidade.',
+    description: 'Horas estimadas, revisões e custos diretos por método de cobrança, hora, diária, escopo fechado, pacote ou mensalidade.',
   },
   {
     number: 'Camada 03',
@@ -47,10 +47,10 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]" id="top">
       {/* ─── Header ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 flex items-center justify-between gap-4 px-5 h-16 border-b border-[var(--color-border)] bg-[var(--color-bg)] flex-wrap">
+      <header className="sticky top-0 z-50 flex items-center justify-between gap-4 px-5 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg)] flex-wrap">
         <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-          <Logo height={30} />
-          <span className="font-display font-900 text-lg tracking-tight uppercase text-[var(--color-text-muted)] border-l border-[var(--color-border)] pl-2.5">
+          <Logo height={80} />
+          <span className="font-display font-900 text-[37px] tracking-tight uppercase text-[var(--color-text-muted)] border-l border-[var(--color-border)] pl-2.5">
             .OS
           </span>
         </Link>
@@ -72,37 +72,40 @@ export default function LandingPage() {
       </header>
 
       {/* ─── Hero ────────────────────────────────────────────────────────── */}
-      <section className="max-w-[1120px] mx-auto px-5 pt-16 pb-14 flex flex-col gap-7">
-        <div className="inline-flex items-center gap-2.5 self-start pl-2 pr-3 py-1.5 border border-[var(--color-border)] rounded-full bg-[var(--color-surface)]">
-          <span className="w-[7px] h-[7px] rounded-full bg-[var(--color-brand-green)] flex-shrink-0" />
-          <span className="text-2xs font-700 tracking-widest uppercase text-[var(--color-text-secondary)]">
-            Motor de 3 camadas · sempre gratuito
-          </span>
-        </div>
-        <h1 className="text-display-xl text-[var(--color-text)] max-w-[20ch]">
-          Quanto você <span className="text-[var(--color-brand-red)]">realmente</span> vale?
-        </h1>
-        <p className="max-w-[56ch] text-lg leading-relaxed text-[var(--color-text-secondary)]">
-          Pare de precificar no sentimento. O BOB.OS calcula seu valor-hora real, aplica multiplicadores de mercado e devolve um orçamento que você consegue defender na frente do cliente.
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/cadastro"
-            className="flex items-center gap-2.5 h-[52px] px-[26px] bg-[var(--color-brand-red)] text-white font-display font-900 text-[17px] tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
-            style={{ boxShadow: '0 8px 32px rgba(255,0,0,.28)' }}
-          >
-            Criar conta grátis
-            <ArrowRight size={18} />
-          </Link>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 h-[52px] px-[22px] border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-[17px] tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] hover:border-[var(--color-text-muted)] transition-colors"
-          >
-            Ver o produto
-          </Link>
-          <span className="text-xs text-[var(--color-text-muted)] max-w-[22ch] leading-snug">
-            Sem cartão. Sem teste expirando. Sem pegadinha.
-          </span>
+      <section className="relative overflow-hidden">
+        <div className="landing-aurora" aria-hidden="true" />
+        <div className="relative z-10 max-w-[1120px] mx-auto px-5 pt-16 pb-14 flex flex-col gap-7">
+          <div className="inline-flex items-center gap-2.5 self-start pl-2 pr-3 py-1.5 border border-[var(--color-border)] rounded-full bg-[var(--color-surface)]">
+            <span className="w-[7px] h-[7px] rounded-full bg-[var(--color-brand-green)] flex-shrink-0" />
+            <span className="text-2xs font-700 tracking-widest uppercase text-[var(--color-text-secondary)]">
+              Motor de 3 camadas · sempre gratuito
+            </span>
+          </div>
+          <h1 className="text-display-xl text-[var(--color-text)] max-w-[20ch]">
+            Quanto você <span className="text-[var(--color-brand-red)]">realmente</span> vale?
+          </h1>
+          <p className="max-w-[56ch] leading-relaxed text-[var(--color-text-secondary)]" style={{ fontSize: '1.3rem' }}>
+            Pare de precificar no sentimento. O BOB.OS calcula seu valor-hora real, aplica multiplicadores de mercado e devolve um orçamento que você consegue defender na frente do cliente.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/cadastro"
+              className="flex items-center gap-2.5 h-[52px] px-[26px] bg-[var(--color-brand-red)] text-white font-display font-900 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+              style={{ boxShadow: '0 8px 32px rgba(255,0,0,.28)' }}
+            >
+              Criar conta grátis
+              <ArrowRight size={18} />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2.5 h-[52px] px-[22px] border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] hover:border-[var(--color-text-muted)] transition-colors"
+            >
+              Ver o produto
+            </Link>
+            <span className="text-xs text-[var(--color-text-muted)] max-w-[22ch] leading-snug">
+              Sem cartão. Sem teste expirando. Sem pegadinha.
+            </span>
+          </div>
         </div>
       </section>
 
@@ -114,7 +117,7 @@ export default function LandingPage() {
               key={p.label}
               className={`flex flex-col gap-1.5 py-7 px-6 ${i < PROOF.length - 1 ? 'border-r border-[var(--color-border)]' : ''}`}
             >
-              <span className="numeric-display leading-none" style={{ fontSize: 44, color: p.color }}>{p.value}</span>
+              <span className="numeric-display leading-none" style={{ fontSize: 53, color: p.color }}>{p.value}</span>
               <span className="text-xs font-600 tracking-wide uppercase text-[var(--color-text-secondary)]">{p.label}</span>
             </div>
           ))}
@@ -165,7 +168,7 @@ export default function LandingPage() {
             />
             <Link
               href="/cadastro"
-              className="flex items-center justify-center gap-2.5 h-12 bg-[var(--color-brand-yellow)] text-black font-display font-900 text-base tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+              className="flex items-center justify-center gap-2.5 h-12 bg-[var(--color-brand-yellow)] text-black font-display font-900 text-[23px] tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
             >
               Criar conta grátis
               <ArrowRight size={17} />
@@ -181,12 +184,12 @@ export default function LandingPage() {
       <footer className="max-w-[1120px] mx-auto px-5 py-11 flex flex-wrap items-center justify-between gap-5">
         <div className="flex items-center gap-3">
           <Logo height={22} />
-          <span className="text-2xs tracking-widest uppercase text-[var(--color-text-muted)]">BOB® · BEEKOFF®</span>
+          <span className="text-2xs tracking-widest uppercase text-[var(--color-text-muted)]">Desenvolvido por | O Designer Bob®</span>
         </div>
         <div className="flex flex-wrap gap-5 text-xs text-[var(--color-text-secondary)]">
           <Link href="/termos" className="animated-underline text-[var(--color-text-secondary)]">Termos</Link>
           <Link href="/privacidade" className="animated-underline text-[var(--color-text-secondary)]">Privacidade</Link>
-          <span>Referência de mercado: ADG Brasil / Adegraf 2025-2026</span>
+          <span>Referência de mercado: ADG Brasil / Adegraf 2024-2026</span>
         </div>
       </footer>
     </div>

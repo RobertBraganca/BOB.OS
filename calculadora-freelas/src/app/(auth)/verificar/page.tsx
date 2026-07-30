@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock } from 'lucide-react'
+import { createClient } from '@/shared/lib/client'
 
 export default function VerificarPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
+  const [resent, setResent] = useState(false)
 
   useEffect(() => {
     setEmail(localStorage.getItem('bob_pending_verification') || 'sua conta')
@@ -14,11 +16,14 @@ export default function VerificarPage() {
 
   const confirmVerify = () => {
     localStorage.removeItem('bob_pending_verification')
-    router.push('/onboarding')
+    router.push('/login')
   }
 
-  const resendVerify = () => {
-    alert(`E-mail de confirmação reenviado para ${email}.`)
+  const resendVerify = async () => {
+    const supabase = createClient()
+    await supabase.auth.resend({ type: 'signup', email })
+    setResent(true)
+    setTimeout(() => setResent(false), 4000)
   }
 
   return (
@@ -35,7 +40,7 @@ export default function VerificarPage() {
       <div className="flex items-center gap-3 p-4 bg-[var(--color-brand-yellow)]/[.12] border border-[var(--color-brand-yellow)]/30 rounded-[var(--radius-md)]">
         <Clock size={17} className="text-[var(--color-brand-yellow)] flex-shrink-0" />
         <span className="text-xs leading-relaxed text-[var(--color-text)]">
-          Enquanto isso você já pode configurar seus custos — nada é perdido.
+          Clique no link do e-mail para ativar sua conta. Sem isso o login fica bloqueado.
         </span>
       </div>
 
@@ -45,14 +50,14 @@ export default function VerificarPage() {
           onClick={confirmVerify}
           className="h-[46px] px-[18px] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
         >
-          Já confirmei · continuar
+          Já confirmei · ir para o login
         </button>
         <button
           type="button"
           onClick={resendVerify}
           className="h-[46px] px-4 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
         >
-          Reenviar e-mail
+          {resent ? 'E-mail reenviado' : 'Reenviar e-mail'}
         </button>
       </div>
     </div>

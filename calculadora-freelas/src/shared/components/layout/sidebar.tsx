@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 import {
   LayoutDashboard,
   Calculator,
@@ -16,7 +16,7 @@ import {
   Moon,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { Logo } from '@/components/ui/logo'
+import { Logo } from '@/shared/components/ui/logo'
 
 /**
  * Sidebar — Design System BOB.OS (design_handoff_bobos_redesign)
@@ -77,7 +77,7 @@ function Sidebar({ className, open = false, onClose }: SidebarProps) {
       {/* Header com Logo */}
       <div className="flex items-center justify-between gap-2 h-[var(--sidebar-header-height)] border-b border-[var(--color-border)] px-[18px]">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden group" title="Ir para o topo · página inicial">
-          <Logo height={32} className="group-hover:scale-105 transition-transform" />
+          <Logo height={80} className="group-hover:scale-105 transition-transform" />
         </Link>
 
         <button

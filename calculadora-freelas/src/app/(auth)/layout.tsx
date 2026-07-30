@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Logo } from '@/components/ui/logo'
+import { Logo } from '@/shared/components/ui/logo'
 
 const BULLETS = [
   { color: 'var(--color-brand-red)', text: 'Valor-hora real calculado sobre os seus custos' },

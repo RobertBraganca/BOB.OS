@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 import { CheckCircle2 } from 'lucide-react'
+import { createClient } from '@/shared/lib/client'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -12,6 +13,17 @@ export default function RecuperarPage() {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const sendResetLink = async () => {
+    setLoading(true)
+    const supabase = createClient()
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/confirm?next=/redefinir-senha`,
+    })
+    setLoading(false)
+    setSent(true)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,7 +32,7 @@ export default function RecuperarPage() {
       return
     }
     setError('')
-    setSent(true)
+    sendResetLink()
   }
 
   if (sent) {
@@ -38,7 +50,7 @@ export default function RecuperarPage() {
         <div className="flex flex-wrap gap-2.5">
           <button
             type="button"
-            onClick={() => setSent(false)}
+            onClick={sendResetLink}
             className="h-11 px-4 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
           >
             Reenviar link
@@ -76,7 +88,7 @@ export default function RecuperarPage() {
           className="h-[46px]"
           id="recover-email"
         />
-        <Button type="submit" size="lg" className="w-full h-12">
+        <Button type="submit" size="lg" loading={loading} className="w-full h-12">
           Enviar link de redefinição
         </Button>
         <Link href="/login" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors">

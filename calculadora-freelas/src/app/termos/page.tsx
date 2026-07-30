@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { Logo } from '@/components/ui/logo'
+import { Logo } from '@/shared/components/ui/logo'
 
 export default function TermosPage() {
   return (

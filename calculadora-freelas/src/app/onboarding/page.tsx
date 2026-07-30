@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Logo } from '@/components/ui/logo'
-import { calculateLayer1, TAX_RATES, type TaxRegime } from '@/lib/pricing'
-import { SERVICE_AREA_LABELS, type ServiceArea } from '@/schemas'
-import { saveCosts, saveProfile, markOnboarded, DEFAULT_COSTS, type SavedCosts } from '@/lib/storage'
-import { formatCurrency } from '@/lib/utils'
+import { Logo } from '@/shared/components/ui/logo'
+import { calculateLayer1, TAX_RATES, type TaxRegime } from '@/modules/pricing/lib'
+import { SERVICE_AREA_LABELS, type ServiceArea } from '@/shared/schemas'
+import { saveCosts, saveProfile, markOnboarded, DEFAULT_COSTS, type SavedCosts } from '@/shared/lib/storage'
+import { formatCurrency } from '@/shared/lib/utils'
 import { CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react'
 
 const REGIMES = Object.entries(TAX_RATES) as [TaxRegime, (typeof TAX_RATES)[TaxRegime]][]
