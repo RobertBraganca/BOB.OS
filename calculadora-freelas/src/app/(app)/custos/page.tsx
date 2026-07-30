@@ -1,28 +1,21 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
-import { PageHeader, PageContent } from '@/components/layout/shell'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input, CurrencyInput, PercentInput } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { calculateLayer1 } from '@/lib/pricing'
-import { formatCurrency } from '@/lib/utils'
-import { DEFAULT_COSTS, loadCosts, saveCosts, type SavedExpense } from '@/lib/storage'
-import type { ExpenseItem } from '@/schemas'
-import { Plus, Trash2, Info, TrendingUp, Clock, Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { PageContent } from '@/shared/components/layout/shell'
+import { calculateLayer1, calculateHourlyRateScenarios } from '@/modules/pricing/lib'
+import { formatCurrency } from '@/shared/lib/utils'
+import { DEFAULT_COSTS, loadCosts, saveCosts, type SavedExpense } from '@/shared/lib/storage'
+import { Plus, Trash2, Clock, CheckCircle2 } from 'lucide-react'
 
-// ─── Tipos locais ─────────────────────────────────────────────────────────────
-
-interface ExpenseItemLocal extends ExpenseItem {
-  id: string
-}
-
-// ─── Componente principal ─────────────────────────────────────────────────────
+const COMP_COLORS = {
+  expenses: 'var(--color-brand-blue)',
+  salary: 'var(--color-brand-yellow)',
+  reserve: 'var(--color-brand-purple)',
+  profit: 'var(--color-brand-green)',
+} as const
 
 export default function CustosPage() {
-  const [expenses, setExpenses] = useState<ExpenseItemLocal[]>(DEFAULT_COSTS.expenses as ExpenseItemLocal[])
+  const [expenses, setExpenses] = useState<SavedExpense[]>(DEFAULT_COSTS.expenses)
   const [desiredSalary, setDesiredSalary] = useState(DEFAULT_COSTS.desiredSalary)
   const [technicalReserve, setTechnicalReserve] = useState(DEFAULT_COSTS.technicalReserve)
   const [profitMargin, setProfitMargin] = useState(DEFAULT_COSTS.profitMargin)
@@ -30,10 +23,9 @@ export default function CustosPage() {
   const [billablePercentage, setBillablePercentage] = useState(DEFAULT_COSTS.billablePercentage)
   const [saved, setSaved] = useState(false)
 
-  // Restaura a última configuração salva (se houver) ao montar
   useEffect(() => {
     const costs = loadCosts()
-    setExpenses(costs.expenses as ExpenseItemLocal[])
+    setExpenses(costs.expenses)
     setDesiredSalary(costs.desiredSalary)
     setTechnicalReserve(costs.technicalReserve)
     setProfitMargin(costs.profitMargin)
@@ -41,22 +33,10 @@ export default function CustosPage() {
     setBillablePercentage(costs.billablePercentage)
   }, [])
 
-  const handleSave = () => {
-    saveCosts({
-      expenses: expenses as SavedExpense[],
-      desiredSalary,
-      technicalReserve,
-      profitMargin,
-      availableHours,
-      billablePercentage,
-    })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
-  // Cálculo em tempo real (< 300ms — PRD RNF-01)
   const result = calculateLayer1({
-    monthlyExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
+    monthlyExpenses: totalExpenses,
     desiredSalary,
     technicalReserve,
     profitMargin: profitMargin / 100,
@@ -64,310 +44,280 @@ export default function CustosPage() {
     billablePercentage,
   })
 
-  const addExpense = useCallback(() => {
-    setExpenses(prev => [...prev, {
-      id: Date.now().toString(),
-      label: '',
-      amount: 0,
-      category: 'other',
-    }])
-  }, [])
+  const comp = [
+    { key: 'expenses', label: 'Despesas fixas', value: result.breakdown.expenses, color: COMP_COLORS.expenses },
+    { key: 'salary', label: 'Pró-labore', value: result.breakdown.salary, color: COMP_COLORS.salary },
+    { key: 'reserve', label: 'Reserva técnica', value: result.breakdown.reserve, color: COMP_COLORS.reserve },
+    { key: 'profit', label: 'Margem de lucro', value: result.breakdown.profit, color: COMP_COLORS.profit },
+  ].map((c) => ({ ...c, pct: result.totalMonthlyCost > 0 ? (c.value / result.totalMonthlyCost) * 100 : 0 }))
 
-  const removeExpense = useCallback((id: string) => {
-    setExpenses(prev => prev.filter(e => e.id !== id))
-  }, [])
-
-  const updateExpense = useCallback((id: string, field: keyof ExpenseItemLocal, value: string | number) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e))
-  }, [])
-
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-
-  // Breakdown percentual da composição do custo
-  const breakdownItems = [
-    { label: 'Despesas Fixas', value: result.breakdown.expenses, color: 'blue' as const },
-    { label: 'Pró-labore', value: result.breakdown.salary, color: 'yellow' as const },
-    { label: 'Reserva Técnica', value: result.breakdown.reserve, color: 'purple' as const },
-    { label: 'Margem de Lucro', value: result.breakdown.profit, color: 'green' as const },
+  const scenarios = calculateHourlyRateScenarios({
+    monthlyExpenses: totalExpenses,
+    desiredSalary,
+    technicalReserve,
+    profitMargin: profitMargin / 100,
+    availableHours,
+  })
+  const scenList = [
+    { label: 'Conservador', pctLabel: '50% faturável', rate: scenarios.conservative.realHourlyRate },
+    { label: 'Padrão', pctLabel: '60% faturável', rate: scenarios.standard.realHourlyRate },
+    { label: 'Otimista', pctLabel: '70% faturável', rate: scenarios.optimistic.realHourlyRate },
   ]
 
-  return (
-    <>
-      <PageHeader
-        label="Configuração"
-        title="Meus Custos"
-        description="Configure seus custos mensais para calcular seu valor-hora real. Este dado é salvo no seu perfil e usado em todos os orçamentos."
-      />
+  const addExpense = () => setExpenses((prev) => [...prev, { id: Date.now().toString(), label: '', amount: 0, category: 'other' }])
+  const removeExpense = (id: string) => setExpenses((prev) => prev.filter((e) => e.id !== id))
+  const updateExpense = (id: string, patch: Partial<SavedExpense>) =>
+    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
 
-      <PageContent className="flex flex-col gap-6">
-        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-yellow)]/15 text-[var(--color-brand-yellow)]">
-              <Sparkles size={18} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="label-uppercase text-[var(--color-brand-red)]">Base operacional</span>
-              <h2 className="font-display font-800 text-lg uppercase tracking-tight text-[var(--color-text)]">
-                Seu valor-hora real começa aqui
-              </h2>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Ajuste despesas, horas faturáveis e reservas para construir uma base técnica sólida antes de precificar qualquer projeto.
-              </p>
-            </div>
+  const handleReset = () => {
+    setExpenses(DEFAULT_COSTS.expenses)
+    setDesiredSalary(DEFAULT_COSTS.desiredSalary)
+    setTechnicalReserve(DEFAULT_COSTS.technicalReserve)
+    setProfitMargin(DEFAULT_COSTS.profitMargin)
+    setAvailableHours(DEFAULT_COSTS.availableHours)
+    setBillablePercentage(DEFAULT_COSTS.billablePercentage)
+  }
+
+  const handleSave = () => {
+    saveCosts({ expenses, desiredSalary, technicalReserve, profitMargin, availableHours, billablePercentage })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const liveBillable = `${result.billableHours.toFixed(0)}h`
+
+  return (
+    <PageContent>
+      <div className="flex flex-col gap-[22px]">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="label-uppercase text-[var(--color-brand-red)]">Camada 01 · custo de existência</span>
+            <h1 className="text-display-md text-[var(--color-text)]">Meus custos</h1>
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)] max-w-[56ch]">
+              Tudo que você paga para existir como profissional, dividido pelas horas que realmente fatura. É daqui que sai o seu piso.
+            </p>
           </div>
-          <Badge variant="warning">MVP · alinhado ao PRD</Badge>
+          <div className="flex gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="h-[42px] px-3.5 border border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:text-[var(--color-text)] hover:border-[var(--color-text-muted)] transition-colors"
+            >
+              Limpar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="flex items-center gap-2 h-[42px] px-[18px] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+            >
+              <CheckCircle2 size={15} />
+              {saved ? 'Custos salvos' : 'Salvar custos'}
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+        <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+          <div className="flex flex-col gap-4">
+            <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+              <div className="flex flex-col gap-1">
+                <span className="label-uppercase text-[var(--color-brand-blue)]">Despesas fixas mensais</span>
+                <h3 className="text-display-sm text-[var(--color-text)]">O que sai da conta todo mês</h3>
+                <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                  Internet, softwares, equipamento amortizado, contador, coworking, impostos fixos.
+                </p>
+              </div>
+              {expenses.length === 0 && (
+                <div className="flex flex-col items-start gap-2 p-6 border border-dashed border-[var(--color-border)] rounded-[var(--radius-md)]">
+                  <span className="text-sm font-700 text-[var(--color-text)]">Nenhuma despesa lançada</span>
+                  <span className="text-xs leading-relaxed text-[var(--color-text-secondary)] max-w-[44ch]">
+                    Comece pelas três maiores: assinatura de software, estrutura e contador.
+                  </span>
+                </div>
+              )}
+              <div className="flex flex-col gap-2.5">
+                {expenses.map((e) => (
+                  <div key={e.id} className="flex flex-wrap gap-2.5 items-end">
+                    <label className="flex flex-col gap-1.5 flex-1 min-w-[160px]">
+                      <span className="label-uppercase">Descrição</span>
+                      <input
+                        value={e.label}
+                        onChange={(ev) => updateExpense(e.id, { label: ev.target.value })}
+                        placeholder="Ex.: Adobe Creative Cloud"
+                        className="h-[46px] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1.5 w-[140px]">
+                      <span className="label-uppercase">Valor / mês</span>
+                      <input
+                        type="number"
+                        value={e.amount || ''}
+                        onChange={(ev) => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
+                        placeholder="0"
+                        className="h-[46px] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => removeExpense(e.id)}
+                      title="Remover despesa"
+                      className="flex items-center justify-center w-[46px] h-[46px] border border-[var(--color-border)] text-[var(--color-text-muted)] rounded-[var(--radius-md)] hover:text-[var(--color-brand-red)] hover:border-[var(--color-brand-red)] transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addExpense}
+                className="flex items-center gap-2 self-start h-[42px] px-4 border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:text-[var(--color-text)] hover:border-[var(--color-brand-red)] transition-colors"
+              >
+                <Plus size={15} />
+                Adicionar despesa
+              </button>
+              <div className="flex items-center justify-between gap-3 pt-3.5 border-t border-[var(--color-border)]">
+                <span className="label-uppercase">Total de despesas</span>
+                <span className="numeric-display text-2xl text-[var(--color-text)]">{formatCurrency(totalExpenses)}</span>
+              </div>
+            </section>
 
-        {/* ─── Coluna principal ──────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-6">
-
-          {/* Despesas Fixas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Despesas Fixas Mensais</CardTitle>
-              <CardDescription>
-                Tudo que você paga todo mês para existir como profissional: internet, softwares,
-                equipamentos amortizados, contador, impostos fixos.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {expenses.map((expense) => (
-                <div key={expense.id} className="flex items-end gap-3">
-                  <Input
-                    label={expenses.indexOf(expense) === 0 ? 'Descrição' : undefined}
-                    placeholder="Ex.: Adobe Creative Cloud"
-                    value={expense.label}
-                    onChange={(e) => updateExpense(expense.id, 'label', e.target.value)}
-                    className="flex-1"
+            <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+              <div className="flex flex-col gap-1">
+                <span className="label-uppercase text-[var(--color-brand-yellow)]">Remuneração e reservas</span>
+                <h3 className="text-display-sm text-[var(--color-text)]">Quanto você quer receber</h3>
+              </div>
+              <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Pró-labore desejado</span>
+                  <input
+                    type="number"
+                    value={desiredSalary || ''}
+                    onChange={(e) => setDesiredSalary(parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
-                  <CurrencyInput
-                    label={expenses.indexOf(expense) === 0 ? 'Valor / mês' : undefined}
-                    value={expense.amount}
-                    onChange={(v) => updateExpense(expense.id, 'amount', v)}
-                    className="w-36"
+                  <span className="text-2xs text-[var(--color-text-muted)]">O que você quer depositar na sua conta todo mês</span>
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Reserva técnica / mês</span>
+                  <input
+                    type="number"
+                    value={technicalReserve || ''}
+                    onChange={(e) => setTechnicalReserve(parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeExpense(expense.id)}
-                    className="text-[var(--color-text-muted)] hover:text-[var(--color-brand-red)] mb-0"
-                    aria-label="Remover despesa"
+                  <button
+                    type="button"
+                    onClick={() => setTechnicalReserve(Math.round(desiredSalary * 0.1))}
+                    className="self-start text-2xs text-[var(--color-brand-red)]"
                   >
-                    <Trash2 size={14} />
-                  </Button>
+                    Usar sugestão: 10% do pró-labore
+                  </button>
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Margem de lucro (%)</span>
+                  <input
+                    type="number"
+                    value={profitMargin}
+                    onChange={(e) => setProfitMargin(parseFloat(e.target.value) || 0)}
+                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                  <span className="text-2xs text-[var(--color-text-muted)]">Lucro sobre o custo base · reinvestimento</span>
+                </label>
+              </div>
+            </section>
+
+            <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+              <div className="flex flex-col gap-1">
+                <span className="label-uppercase text-[var(--color-brand-green)]">Capacidade de trabalho</span>
+                <h3 className="text-display-sm text-[var(--color-text)]">Horas que existem × horas que faturam</h3>
+              </div>
+              <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Horas disponíveis / mês</span>
+                  <input
+                    type="number"
+                    value={availableHours}
+                    onChange={(e) => setAvailableHours(parseFloat(e.target.value) || 0)}
+                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                  <span className="text-2xs text-[var(--color-text-muted)]">Padrão: 176h = 22 dias × 8h</span>
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Aproveitamento faturável (%)</span>
+                  <input
+                    type="number"
+                    value={billablePercentage}
+                    onChange={(e) => setBillablePercentage(parseFloat(e.target.value) || 0)}
+                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                  <span className="text-2xs text-[var(--color-text-muted)]">Ninguém fatura 100%: orçamento, admin e prospecção também consomem hora</span>
+                </label>
+              </div>
+              <div className="flex items-center gap-2.5 p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                <Clock size={16} className="text-[var(--color-brand-blue)] flex-shrink-0" />
+                <span className="text-2xs leading-relaxed text-[var(--color-text-secondary)]">Resultado atual: {liveBillable} faturáveis por mês.</span>
+              </div>
+            </section>
+          </div>
+
+          <aside className="flex flex-col gap-4 sticky" style={{ top: 88 }}>
+            <div
+              className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]"
+              style={{ borderTop: '2px solid var(--color-brand-red)' }}
+            >
+              <span className="label-uppercase">Valor-hora real · em tempo real</span>
+              <span className="numeric-display leading-[.9] text-[var(--color-text)]" style={{ fontSize: 'clamp(40px,7vw,62px)' }}>
+                {formatCurrency(result.realHourlyRate)}
+              </span>
+              <div className="flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]">
+                <div className="flex justify-between gap-2.5 text-xs">
+                  <span className="text-[var(--color-text-secondary)]">Custo mensal total</span>
+                  <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(result.totalMonthlyCost)}</span>
+                </div>
+                <div className="flex justify-between gap-2.5 text-xs">
+                  <span className="text-[var(--color-text-secondary)]">Horas faturáveis</span>
+                  <span className="font-mono font-700 text-[var(--color-text)]">{liveBillable}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+              <span className="label-uppercase">Composição do custo</span>
+              <div className="flex flex-col gap-2.5">
+                {comp.map((c) => (
+                  <div key={c.key} className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                        <span className="text-xs text-[var(--color-text-secondary)]">{c.label}</span>
+                      </div>
+                      <span className="font-mono text-2xs font-700 text-[var(--color-text)]">{formatCurrency(c.value)}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-[var(--color-bg)] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+              <span className="label-uppercase">Cenários de aproveitamento</span>
+              {scenList.map((s) => (
+                <div key={s.label} className="flex items-center justify-between gap-2.5 p-2.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-700 text-[var(--color-text)]">{s.label}</span>
+                    <span className="text-2xs text-[var(--color-text-muted)]">{s.pctLabel}</span>
+                  </div>
+                  <span className="numeric-display text-lg text-[var(--color-text)]">{formatCurrency(s.rate)}</span>
                 </div>
               ))}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={addExpense}
-                className="self-start mt-1 text-[var(--color-text-muted)]"
-              >
-                <Plus size={14} className="mr-1.5" />
-                Adicionar despesa
-              </Button>
-
-              <div className="flex items-center justify-between pt-3 border-t border-[var(--color-border)] mt-1">
-                <span className="label-uppercase">Total de despesas</span>
-                <span className="numeric-display text-xl text-[var(--color-text)]">
-                  {formatCurrency(totalExpenses)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Remuneração */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Remuneração e Reservas</CardTitle>
-              <CardDescription>
-                Quanto você quer receber por mês (pró-labore) e quanto precisa reservar para
-                imprevistos e crescimento.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CurrencyInput
-                label="Pró-labore desejado"
-                hint="Quanto você quer depositar na sua conta todo mês"
-                value={desiredSalary}
-                onChange={setDesiredSalary}
-              />
-              <CurrencyInput
-                label="Reserva técnica / mês"
-                hint="Fundo de emergência, férias, 13º · sugestão: 10% do pró-labore"
-                value={technicalReserve}
-                onChange={setTechnicalReserve}
-              />
-              <PercentInput
-                label="Margem de lucro desejada"
-                hint="Aplicada sobre o total de custos"
-                value={profitMargin}
-                onChange={setProfitMargin}
-                min={0}
-                max={100}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Horas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Capacidade de Trabalho</CardTitle>
-              <CardDescription>
-                Horas disponíveis ≠ horas faturáveis. Este é o conceito mais importante do motor
-                de cálculo. Nem toda hora trabalhada é vendável.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Horas disponíveis por mês"
-                  hint="Padrão: 176h = 22 dias × 8h"
-                  type="number"
-                  value={availableHours}
-                  onChange={(e) => setAvailableHours(parseInt(e.target.value) || 176)}
-                  min={40}
-                  max={744}
-                />
-                <PercentInput
-                  label="% de aproveitamento faturável"
-                  hint="Quanto das suas horas é realmente vendável (sugerido: 55-65%)"
-                  value={billablePercentage}
-                  onChange={setBillablePercentage}
-                  min={10}
-                  max={100}
-                />
-              </div>
-
-              {/* Visualização das horas */}
-              <div className="flex flex-col gap-3 p-4 bg-[var(--color-surface-raised)] rounded-[var(--radius-md)]">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[var(--color-text-muted)]">
-                    Horas disponíveis: <strong className="text-[var(--color-text)]">{availableHours}h</strong>
-                  </span>
-                  <span className="text-[var(--color-text-muted)]">
-                    Horas faturáveis: <strong className="text-[var(--color-brand-red)]">{result.billableHours.toFixed(0)}h</strong>
-                  </span>
-                </div>
-                <Progress value={billablePercentage} color="red" size="md" />
-                <div className="flex items-start gap-2">
-                  <Info size={12} className="text-[var(--color-text-muted)] mt-0.5 flex-shrink-0" />
-                  <p className="text-[0.65rem] text-[var(--color-text-muted)] leading-relaxed">
-                    As {availableHours - result.billableHours}h restantes são consumidas por reuniões,
-                    tarefas administrativas, prospecção, estudo e elaboração de propostas.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+            </div>
+          </aside>
         </div>
-
-        {/* ─── Coluna lateral: resultado em tempo real ──────────────────────── */}
-        <div className="flex flex-col gap-4 sticky top-6">
-
-          {/* Valor-hora resultado */}
-          <Card accent="red">
-            <CardContent className="flex flex-col gap-4 p-6">
-              <div className="flex items-center justify-between">
-                <span className="label-uppercase">Sua hora vale</span>
-                <Badge variant="red">Tempo real</Badge>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="numeric-display text-5xl font-900 text-[var(--color-brand-red)] leading-none price-animate">
-                  {formatCurrency(result.realHourlyRate)}
-                </span>
-                <span className="text-xs text-[var(--color-text-muted)]">por hora faturável</span>
-              </div>
-
-              <div className="divider" />
-
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[var(--color-text-secondary)]">Custo mensal total</span>
-                  <span className="font-600 text-[var(--color-text)]">
-                    {formatCurrency(result.totalMonthlyCost)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[var(--color-text-secondary)]">Horas faturáveis</span>
-                  <span className="font-600 text-[var(--color-text)]">
-                    {result.billableHours.toFixed(0)}h / mês
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Composição do custo</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {breakdownItems.map((item) => {
-                const pct = result.totalMonthlyCost > 0
-                  ? (item.value / result.totalMonthlyCost) * 100
-                  : 0
-                return (
-                  <div key={item.label} className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[var(--color-text-secondary)]">{item.label}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[var(--color-text-muted)]">{pct.toFixed(0)}%</span>
-                        <span className="font-600 text-[var(--color-text)] tabular-nums">
-                          {formatCurrency(item.value)}
-                        </span>
-                      </div>
-                    </div>
-                    <Progress value={pct} color={item.color} size="xs" />
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Cenários */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Cenários de aproveitamento</CardTitle>
-              <CardDescription>Como o % faturável impacta seu valor-hora</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {([
-                { label: 'Conservador', pct: 50, color: 'text-[var(--color-text-muted)]' },
-                { label: 'Padrão', pct: 60, color: 'text-[var(--color-brand-yellow)]' },
-                { label: 'Otimista', pct: 70, color: 'text-[var(--color-brand-green)]' },
-              ] as const).map(({ label, pct, color }) => {
-                const scenarioRate = result.totalMonthlyCost / (availableHours * (pct / 100))
-                return (
-                  <div key={label} className="flex items-center justify-between text-xs py-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-600 ${color}`}>{pct}%</span>
-                      <span className="text-[var(--color-text-muted)]">{label}</span>
-                    </div>
-                    <span className={`numeric-display font-700 ${color}`}>
-                      {formatCurrency(scenarioRate)}/h
-                    </span>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-
-          <Button className="w-full" size="lg" onClick={handleSave}>
-            <TrendingUp size={15} className="mr-2" />
-            {saved ? 'Configuração salva' : 'Salvar configuração'}
-          </Button>
-        </div>
-        </div>
-
-      </PageContent>
-    </>
+      </div>
+    </PageContent>
   )
 }

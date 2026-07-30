@@ -38,9 +38,9 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeProvider } from '@/shared/providers/theme-provider'
 import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 

@@ -100,8 +100,8 @@
 
   /* ─── Layout ─────────────────────────────────────────────────────────────── */
   --sidebar-width: 15.5rem;
-  --topbar-height: 4rem;
-  --sidebar-header-height: 3.5rem;
+  --topbar-height: 5.5rem;
+  --sidebar-header-height: 6.5rem;
   --page-padding-x: 2rem;
   --content-max-width: 77.5rem;
 
@@ -220,10 +220,17 @@
 
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Precisa estar em @layer base: como regra "crua" (fora de layer), esta reset
+   vence QUALQUER utilitário do Tailwind (@layer utilities) para as mesmas
+   propriedades — inclusive padding e margin do app inteiro — porque regras
+   fora de camada sempre têm prioridade sobre regras em camada, não importa a
+   especificidade. Já causou exatamente esse bug uma vez; não tirar daqui de novo. */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html {

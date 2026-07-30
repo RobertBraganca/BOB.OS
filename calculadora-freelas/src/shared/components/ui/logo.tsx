@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 /**
  * Logo — wordmark BOB® (Brandboard v1.0). Nunca redesenhar — apenas trocar a variante de cor.

@@ -1,222 +1,230 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { PageHeader, PageContent } from '@/components/layout/shell'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { formatCurrency } from '@/lib/utils'
-import { loadLastProposal, type SavedProposal } from '@/lib/storage'
-import { Printer, ArrowLeft, CheckCircle2, ShieldCheck, Clock, FileText } from 'lucide-react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { formatCurrency } from '@/shared/lib/utils'
+import { loadLastProposal, getProposalById, loadProfile, type SavedProposal } from '@/shared/lib/storage'
+import { SERVICE_AREA_LABELS } from '@/shared/schemas'
+import { ArrowLeft, Download } from 'lucide-react'
 
-export default function PropostaPreviewPage() {
+const METHOD_LABELS: Record<string, string> = {
+  hourly: 'hora',
+  daily: 'diária',
+  fixed_scope: 'escopo fechado',
+  value_based: 'valor',
+  package: 'pacote',
+  retainer: 'retainer mensal',
+}
+
+function addDays(iso: string, days: number): string {
+  const d = new Date(iso)
+  d.setDate(d.getDate() + days)
+  return d.toLocaleDateString('pt-BR')
+}
+
+function PropostaPreview() {
+  const searchParams = useSearchParams()
+  const id = searchParams.get('id')
   const [data, setData] = useState<SavedProposal | null>(null)
+  const [profile, setProfile] = useState<ReturnType<typeof loadProfile>>(null)
 
   useEffect(() => {
-    const last = loadLastProposal()
-    if (!last) return
-    setData(last)
-    document.title = last.projectName ? `Proposta Comercial - ${last.projectName}` : 'Proposta Comercial'
-  }, [])
+    const found = id ? getProposalById(id) : loadLastProposal()
+    setData(found)
+    setProfile(loadProfile())
+    if (found) document.title = `Proposta Comercial - ${found.projectName}`
+  }, [id])
 
   if (!data) {
     return (
-      <PageContent>
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <span className="text-sm text-[var(--color-text-muted)]">Nenhuma proposta recente encontrada.</span>
-          <Button asChild variant="secondary" size="md">
-            <Link href="/calcular">Voltar para calculadora</Link>
-          </Button>
+      <div className="min-h-screen bg-[var(--color-bg)]">
+        <div className="sticky top-0 z-40 flex flex-wrap items-center gap-2.5 px-5 py-3 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
+          <Link
+            href="/propostas"
+            className="flex items-center gap-2 h-10 px-3.5 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
+          >
+            <ArrowLeft size={15} />
+            Propostas
+          </Link>
         </div>
-      </PageContent>
+        <div className="flex flex-col items-start gap-3.5 p-12 max-w-[620px]">
+          <h2 className="text-display-sm text-[var(--color-text)]">Nenhuma proposta para exibir</h2>
+          <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            Calcule um orçamento e salve a proposta para gerar o documento comercial.
+          </p>
+          <Link
+            href="/calcular"
+            className="h-11 flex items-center px-[18px] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)]"
+          >
+            Ir para a calculadora
+          </Link>
+        </div>
+      </div>
     )
   }
 
-  const { form, result, benchmark, projectName, date } = data
+  const { form, result, benchmark, projectName, clientName, authorName, createdAt } = data
+  const laborCost = data.laborCost ?? 0
+  const revisionCost = data.revisionCost ?? 0
+  const totalDirectCosts = data.totalDirectCosts ?? 0
+  const areaLabel = profile ? SERVICE_AREA_LABELS[profile.serviceArea as keyof typeof SERVICE_AREA_LABELS] : ''
+  const methodLabel = METHOD_LABELS[form.pricingMethod] ?? form.pricingMethod
 
   return (
-    <>
-      {/* Botões de ação topo (ocultos na impressão via CSS print:hidden) */}
-      <div className="print:hidden">
-        <PageHeader
-          label="Documento comercial"
-          title={`Proposta: ${projectName}`}
-          description="Documento gerado com metodologia em 3 camadas pronto para exportação em PDF ou apresentação."
-          actions={
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="md" asChild>
-                <Link href="/calcular" className="flex items-center gap-1.5">
-                  <ArrowLeft size={14} />
-                  Ajustar cálculo
-                </Link>
-              </Button>
-              <Button size="md" onClick={() => window.print()} className="flex items-center gap-2">
-                <Printer size={15} />
-                Imprimir / Exportar PDF
-              </Button>
-            </div>
-          }
-        />
+    <div className="min-h-screen bg-[var(--color-bg)]">
+      <div className="sticky top-0 z-40 flex flex-wrap items-center gap-2.5 px-5 py-3 bg-[var(--color-bg)] border-b border-[var(--color-border)] print:hidden">
+        <Link
+          href="/propostas"
+          className="flex items-center gap-2 h-10 px-3.5 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
+        >
+          <ArrowLeft size={15} />
+          Propostas
+        </Link>
+        <span className="label-uppercase ml-1">Proposta comercial · pronta para PDF</span>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex items-center gap-2 h-10 px-4 ml-auto bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+        >
+          <Download size={15} />
+          Exportar PDF
+        </button>
       </div>
 
-      <PageContent className="max-w-3xl mx-auto print:max-w-none print:p-0">
-        <div className="mb-6 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 flex flex-col gap-2">
-          <span className="label-uppercase text-[var(--color-brand-red)]">Documento comercial</span>
-          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-            Este layout foi pensado para transmitir confiança, clareza e respaldo técnico na negociação — sem perder a autoridade visual da marca.
-          </p>
-        </div>
+      {/* Documento A4 — cores fixas em hex (nunca tokens de tema): é impresso em papel branco sempre. */}
+      <div className="flex justify-center py-8 print:py-0 print:block">
+        <div
+          className="flex flex-col p-12 print:p-[52px]"
+          style={{ background: '#FFFFFF', color: '#09090B', width: '210mm', minHeight: '297mm', fontFamily: 'var(--font-body)' }}
+        >
+          <header className="flex items-start justify-between gap-6 pb-[18px]" style={{ borderBottom: '2px solid #FF0000' }}>
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#71717A' }}>
+              Proposta comercial<br />Orçamento para prestação<br />de serviços
+            </span>
+            <div className="flex flex-col gap-0.5 text-right">
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#71717A' }}>Emitida em</span>
+              <span className="font-mono" style={{ fontSize: 12, fontWeight: 700, color: '#09090B' }}>{data.date}</span>
+              <span style={{ fontSize: 9, color: '#71717A' }}>Válida até {addDays(createdAt, 15)}</span>
+            </div>
+          </header>
 
-        {/* Documento Editorial Proposta — Alto Contraste */}
-        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-8 sm:p-12 flex flex-col gap-8 print:border-none print:rounded-none print:bg-white print:text-black">
-          
-          {/* Cabeçalho da Proposta */}
-          <div className="flex items-start justify-between border-b border-[var(--color-border)] pb-6 print:border-[#E4E4E7]">
+          <div className="flex flex-col gap-1.5" style={{ padding: '22px 0 18px' }}>
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#FF0000' }}>
+              {clientName || 'Cliente'}
+            </span>
+            <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 38, lineHeight: 1.05, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#09090B' }}>
+              {projectName}
+            </h1>
+            <span style={{ fontSize: 11, color: '#52525B' }}>
+              {[authorName || 'Profissional', areaLabel, `cobrança por ${methodLabel}`].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+
+          <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1fr 1fr', padding: '18px 0', borderTop: '1px solid #E4E4E7', borderBottom: '1px solid #E4E4E7' }}>
             <div className="flex flex-col gap-1">
-              <span className="font-display font-900 text-2xl tracking-tight text-[var(--color-brand-red)] print:text-[var(--color-brand-red)]">
-                PROPOSTA COMERCIAL
-              </span>
-              <h1 className="text-xl sm:text-2xl font-700 text-[var(--color-text)] print:text-black mt-1">
-                {projectName}
-              </h1>
-              <span className="text-xs text-[var(--color-text-muted)] print:text-[#52525B] mt-0.5">
-                Emitido em {date} · Validade: 15 dias corridos
-              </span>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#71717A' }}>Investimento mínimo</span>
+              <span className="numeric-display" style={{ fontSize: 22, color: '#52525B' }}>{formatCurrency(result.quote.minimum)}</span>
             </div>
-            <Badge variant="default" className="print:border-[#E4E4E7] print:text-[#09090B]">
-              Metodologia Certificada
-            </Badge>
-          </div>
-
-          {/* Resumo e Escopo */}
-          <div className="flex flex-col gap-3">
-            <h3 className="label-uppercase text-xs tracking-wider text-[var(--color-text-muted)] print:text-[#71717A]">
-              1. Escopo e Dedicação
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] print:bg-[#F4F4F5] print:border print:border-[#E4E4E7]">
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Modelo</span>
-                <span className="text-sm font-600 capitalize text-[var(--color-text)] print:text-black">{form.pricingMethod.replace('_', ' ')}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Tempo Estimado</span>
-                <span className="text-sm font-600 text-[var(--color-text)] print:text-black">{form.estimatedHours} horas</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Revisões Inclusas</span>
-                <span className="text-sm font-600 text-[var(--color-text)] print:text-black">{form.revisions} rodadas</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Uso e Licença</span>
-                <span className="text-sm font-600 capitalize text-[var(--color-text)] print:text-black">{form.usageRights}</span>
-              </div>
+            <div className="flex flex-col gap-1" style={{ padding: '0 12px', borderLeft: '3px solid #FF0000' }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#FF0000' }}>Investimento recomendado</span>
+              <span className="numeric-display" style={{ fontSize: 34, color: '#09090B', lineHeight: 1 }}>{formatCurrency(result.quote.recommended)}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#71717A' }}>Escopo ampliado</span>
+              <span className="numeric-display" style={{ fontSize: 22, color: '#52525B' }}>{formatCurrency(result.quote.premium)}</span>
             </div>
           </div>
 
-          {/* Investimento (Faixa Recomendada em Destaque) */}
-          <div className="flex flex-col gap-4">
-            <h3 className="label-uppercase text-xs tracking-wider text-[var(--color-text-muted)] print:text-[#71717A]">
-              2. Investimento Comercial
-            </h3>
-            
-            <div className="border border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/5 rounded-[var(--radius-lg)] p-6 flex flex-col sm:flex-row items-center justify-between gap-6 print:bg-[#FAFAFA] print:border-2 print:border-[var(--color-brand-red)]">
-              <div className="flex flex-col gap-1 text-center sm:text-left">
-                <span className="label-uppercase text-[var(--color-brand-red)] print:text-[var(--color-brand-red)] font-700">
-                  Opção Recomendada (Escopo Completo)
-                </span>
-                <p className="text-xs text-[var(--color-text-secondary)] print:text-[#52525B] max-w-md leading-relaxed">
-                  Contempla 100% das horas estimadas, rodadas de revisão de escopo, custos operacionais indiretos e impostos aplicáveis emitidos em nota fiscal.
-                </p>
+          <div className="grid gap-8" style={{ gridTemplateColumns: '1.15fr 1fr', paddingTop: 22, flex: 1 }}>
+            <div className="flex flex-col gap-2.5">
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#09090B' }}>Composição do investimento</span>
+              <div className="flex justify-between gap-3 pb-1.5" style={{ borderBottom: '1px solid #F4F4F5' }}>
+                <span style={{ fontSize: 11, color: '#52525B' }}>Execução · {form.estimatedHours}h × {formatCurrency(result.hourlyRate)}</span>
+                <span className="font-mono" style={{ fontSize: 11, fontWeight: 700 }}>{formatCurrency(laborCost)}</span>
               </div>
-              <div className="flex flex-col items-center sm:items-end flex-shrink-0">
-                <span className="numeric-display font-900 text-4xl leading-none text-[var(--color-brand-red)] print:text-[var(--color-brand-red)]">
-                  {formatCurrency(result.quote.recommended)}
-                </span>
-                <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A] mt-1">
-                  ou 2× de {formatCurrency(result.quote.recommended / 2)} (50% início / 50% entrega)
-                </span>
+              <div className="flex justify-between gap-3 pb-1.5" style={{ borderBottom: '1px solid #F4F4F5' }}>
+                <span style={{ fontSize: 11, color: '#52525B' }}>Revisões inclusas · {form.revisions} rodadas</span>
+                <span className="font-mono" style={{ fontSize: 11, fontWeight: 700 }}>{formatCurrency(revisionCost)}</span>
               </div>
-            </div>
-
-            {/* Alternativas de Investimento */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="p-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] print:border-[#E4E4E7] flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-600 text-[var(--color-text)] print:text-black">Opção Enxuta (Piso)</span>
-                  <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Entregáveis essenciais, sem extras</span>
-                </div>
-                <span className="numeric-display font-800 text-lg text-[var(--color-text-secondary)] print:text-[#09090B]">
-                  {formatCurrency(result.quote.minimum)}
-                </span>
+              <div className="flex justify-between gap-3 pb-1.5" style={{ borderBottom: '1px solid #F4F4F5' }}>
+                <span style={{ fontSize: 11, color: '#52525B' }}>Custos diretos e terceiros</span>
+                <span className="font-mono" style={{ fontSize: 11, fontWeight: 700 }}>{formatCurrency(totalDirectCosts)}</span>
               </div>
-              <div className="p-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] print:border-[#E4E4E7] flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-600 text-[var(--color-text)] print:text-black">Opção Premium / Prioritária</span>
-                  <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Atendimento expresso + consultoria</span>
-                </div>
-                <span className="numeric-display font-800 text-lg text-[var(--color-text-secondary)] print:text-[#09090B]">
-                  {formatCurrency(result.quote.premium)}
-                </span>
+              <div className="flex justify-between gap-3 pb-1.5" style={{ borderBottom: '1px solid #E4E4E7' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#09090B' }}>Subtotal técnico</span>
+                <span className="font-mono" style={{ fontSize: 11, fontWeight: 700 }}>{formatCurrency(result.basePrice)}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Comparativo Adegraf (se disponível) */}
-          {benchmark && (
-            <div className="flex flex-col gap-2 p-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] print:border-[#E4E4E7] print:bg-[#FAFAFA]">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-700 text-[var(--color-text)] print:text-black">
-                  Referência de Mercado (ADG Brasil / Adegraf)
-                </span>
-                <Badge variant="default" className="print:border-[#E4E4E7] print:text-[#09090B]">
-                  {benchmark.status === 'below' ? 'Abaixo da média' : benchmark.status === 'premium' ? 'Faixa Superior' : 'Média de Mercado'}
-                </Badge>
+              <div className="flex justify-between gap-3 pb-1.5" style={{ borderBottom: '1px solid #F4F4F5' }}>
+                <span style={{ fontSize: 11, color: '#52525B' }}>Ajuste de contexto ×{result.quote.multiplierDetail.combined.toFixed(2)}</span>
+                <span className="font-mono" style={{ fontSize: 11, fontWeight: 700 }}>{formatCurrency(result.quote.adjustedPrice)}</span>
               </div>
-              <p className="text-xs text-[var(--color-text-secondary)] print:text-[#52525B] leading-relaxed">
-                Para entregas da categoria <strong>{benchmark.service.categoryLabel}</strong> ({benchmark.service.name}), a referência de mercado estipula valores entre <strong>{formatCurrency(benchmark.service.minRate)}</strong> e <strong>{formatCurrency(benchmark.service.maxRate)}</strong>. Esta proposta encontra-se calibrada com as melhores práticas comerciais do setor.
+              <div className="flex justify-between gap-3">
+                <span style={{ fontSize: 11, color: '#52525B' }}>Tributos · {result.quote.taxDetail.regime.replace('_', ' ')} ({(result.quote.taxDetail.rate * 100).toFixed(1)}%)</span>
+                <span className="font-mono" style={{ fontSize: 11, fontWeight: 700 }}>{formatCurrency(result.quote.taxDetail.taxAmount)}</span>
+              </div>
+              <p style={{ margin: '12px 0 0', fontSize: 10, lineHeight: 1.6, color: '#71717A' }}>
+                Valores calculados sobre custo operacional real, capacidade faturável e contexto do projeto. Tributos já embutidos: o valor apresentado é o valor a pagar.
               </p>
             </div>
-          )}
 
-          {/* Garantias e Termos */}
-          <div className="flex flex-col gap-3 pt-2">
-            <h3 className="label-uppercase text-xs tracking-wider text-[var(--color-text-muted)] print:text-[#71717A]">
-              3. Garantias e Condições de Fornecimento
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[var(--color-text-secondary)] print:text-[#52525B]">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 size={15} className="text-[var(--color-brand-red)] print:text-[var(--color-brand-red)] flex-shrink-0 mt-0.5" />
-                <span><strong>Preço Justo Garantido:</strong> Calculado sobre estrutura real e custos aferidos, sem achismos.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <ShieldCheck size={15} className="text-[var(--color-brand-red)] print:text-[var(--color-brand-red)] flex-shrink-0 mt-0.5" />
-                <span><strong>Nota Fiscal:</strong> Valores já incluem gross-up tributário integral para emissão regular de NF.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Clock size={15} className="text-[var(--color-brand-red)] print:text-[var(--color-brand-red)] flex-shrink-0 mt-0.5" />
-                <span><strong>Cronograma:</strong> Início imediato mediante aprovação formal e pagamento do adiantamento (50%).</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <FileText size={15} className="text-[var(--color-brand-red)] print:text-[var(--color-brand-red)] flex-shrink-0 mt-0.5" />
-                <span><strong>Validade:</strong> Proposta sujeita a agendamento de pauta no período de 15 dias.</span>
+            <div className="flex flex-col gap-2.5">
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#09090B' }}>Contexto considerado</span>
+              {[
+                { category: 'Complexidade', ...result.quote.multiplierDetail.complexity },
+                { category: 'Urgência', ...result.quote.multiplierDetail.urgency },
+                { category: 'Porte do cliente', ...result.quote.multiplierDetail.clientSize },
+                { category: 'Direitos de uso', ...result.quote.multiplierDetail.usageRights },
+              ].map((m) => (
+                <div
+                  key={m.category}
+                  className="flex items-center justify-between gap-2.5"
+                  style={{ padding: '9px 11px', background: '#FAFAFA', border: '1px solid #E4E4E7', borderRadius: 4 }}
+                >
+                  <span className="flex flex-col">
+                    <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#71717A' }}>{m.category}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#09090B' }}>{m.label}</span>
+                  </span>
+                  <span className="numeric-display" style={{ fontSize: 13, color: '#FF0000' }}>×{m.multiplier}</span>
+                </div>
+              ))}
+              <div className="flex flex-col gap-1" style={{ marginTop: 6, padding: 12, background: '#09090B', borderRadius: 4 }}>
+                <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#FFC700' }}>Condições</span>
+                <span style={{ fontSize: 10, lineHeight: 1.6, color: '#FFFFFF' }}>
+                  50% na aprovação, 50% na entrega final. Prazo e escopo conforme alinhado. Direitos de uso conforme licença acima.
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Assinatura */}
-          <div className="border-t border-[var(--color-border)] print:border-[#E4E4E7] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col text-center sm:text-left">
-              <span className="font-700 text-sm text-[var(--color-text)] print:text-black">Aceite do Cliente</span>
-              <span className="text-xs text-[var(--color-text-muted)] print:text-[#71717A]">Assinatura ou confirmação por e-mail/WhatsApp</span>
+          <footer className="flex items-end justify-between gap-5" style={{ paddingTop: 18, marginTop: 18, borderTop: '1px solid #E4E4E7' }}>
+            <div className="flex flex-col gap-1">
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#71717A' }}>Aprovação do cliente</span>
+              <span style={{ display: 'block', width: 220, borderBottom: '1px solid #09090B', height: 22 }} />
+              <span style={{ fontSize: 9, color: '#71717A' }}>{clientName || 'Cliente'}</span>
             </div>
-            <div className="w-64 border-b border-dashed border-[var(--color-text-muted)] print:border-[#E4E4E7] pb-2 text-center">
-              <span className="text-[0.65rem] text-[var(--color-text-muted)] print:text-[#71717A]">Data e Assinatura</span>
-            </div>
-          </div>
-
+            <span style={{ fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#A1A1AA' }}>
+              Referência de mercado: ADG Brasil / Adegraf 2024-2026
+            </span>
+          </footer>
         </div>
-      </PageContent>
-    </>
+      </div>
+
+      {benchmark && (
+        <div className="flex justify-center pb-8 print:hidden">
+          <p className="text-xs text-[var(--color-text-muted)] max-w-[210mm] px-2">
+            Referência: {benchmark.statusText.toLowerCase()}.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function PropostaPreviewPage() {
+  return (
+    <Suspense>
+      <PropostaPreview />
+    </Suspense>
   )
 }

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, Plus } from 'lucide-react'
 import { Sidebar } from './sidebar'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 /**
  * AppShell — Layout da aplicação autenticada (design_handoff_bobos_redesign)
@@ -53,7 +53,7 @@ function AppShell({ children, className }: AppShellProps) {
         )}
       >
         {/* Barra utilitária — persistente em todas as telas do app */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 h-14 px-5 border-b border-[var(--color-border)] bg-[var(--color-bg)] print:hidden">
+        <header className="sticky top-0 z-20 flex items-center gap-3 py-5 px-5 border-b border-[var(--color-border)] bg-[var(--color-bg)] print:hidden">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
@@ -63,8 +63,8 @@ function AppShell({ children, className }: AppShellProps) {
             <Menu size={18} />
           </button>
           <div className="flex flex-col min-w-0">
-            <span className="label-uppercase leading-none">{route.eyebrow}</span>
-            <span className="font-display font-800 text-lg uppercase tracking-tight text-[var(--color-text)] whitespace-nowrap overflow-hidden text-ellipsis">
+            <span className="label-uppercase leading-none hidden">{route.eyebrow}</span>
+            <span className="font-display font-800 text-2xl uppercase tracking-tight text-[var(--color-text)] whitespace-nowrap overflow-hidden text-ellipsis">
               {route.title}
             </span>
           </div>

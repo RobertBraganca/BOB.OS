@@ -1,718 +1,677 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { PageHeader, PageContent } from '@/components/layout/shell'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input, CurrencyInput } from '@/components/ui/input'
-import { StepIndicator, StepHeader } from '@/components/ui/stepper'
-import { Progress } from '@/components/ui/progress'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { PageContent } from '@/shared/components/layout/shell'
 import {
+  calculateLayer1,
+  calculateLayer2,
+  calculateLayer3,
   COMPLEXITY_MULTIPLIERS,
   URGENCY_MULTIPLIERS,
   CLIENT_SIZE_MULTIPLIERS,
   USAGE_RIGHTS_MULTIPLIERS,
+  ADEGRAF_BENCHMARKS,
+  compareQuoteWithBenchmark,
   type ComplexityLevel,
   type UrgencyLevel,
   type ClientSize,
   type UsageRights,
   type PricingMethod,
   type TaxRegime,
-  calculateFullQuote,
-  calculateLayer1,
-  getServicesByCategory,
-  getBenchmarkServiceById,
-  compareQuoteWithBenchmark,
-} from '@/lib/pricing'
-import { formatCurrency, cn } from '@/lib/utils'
-import { DEFAULT_COSTS, loadCosts, loadProfile, saveLastProposal, totalMonthlyExpenses, type SavedCosts } from '@/lib/storage'
-import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, TrendingUp, Info } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+} from '@/modules/pricing/lib'
+import { formatCurrency } from '@/shared/lib/utils'
+import { DEFAULT_COSTS, loadCosts, loadProfile, saveLastProposal, totalMonthlyExpenses, type SavedCosts } from '@/shared/lib/storage'
+import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, FileText, Download, Plus, Trash2 } from 'lucide-react'
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
+const STEPS = ['Serviço', 'Tempo', 'Complexidade', 'Urgência', 'Cliente', 'Direitos', 'Extras', 'Resultado']
 
-const STEPS = [
-  { label: 'Serviço' },
-  { label: 'Tempo' },
-  { label: 'Complexidade' },
-  { label: 'Urgência' },
-  { label: 'Cliente' },
-  { label: 'Direitos' },
-  { label: 'Extras' },
-  { label: 'Resultado' },
+const METHODS: { value: PricingMethod; label: string; desc: string }[] = [
+  { value: 'hourly', label: 'Valor/hora', desc: 'Ajustes pontuais, consultorias curtas' },
+  { value: 'daily', label: 'Diária', desc: 'Fotografia, filmagem em locação' },
+  { value: 'fixed_scope', label: 'Escopo fechado', desc: 'Identidade visual, sites, landing pages' },
+  { value: 'value_based', label: 'Baseado em valor', desc: 'Consultoria estratégica, branding de alto impacto' },
+  { value: 'package', label: 'Pacote', desc: 'Social media, produção de conteúdo recorrente' },
+  { value: 'retainer', label: 'Retainer/mensal', desc: 'Gestão de tráfego, manutenção, consultoria contínua' },
 ]
 
-const PRICING_METHODS: { value: PricingMethod; label: string; description: string }[] = [
-  { value: 'hourly',      label: 'Valor/hora',     description: 'Ideal para ajustes pontuais e consultorias curtas' },
-  { value: 'daily',       label: 'Diária',          description: 'Fotografia, filmagem em locação' },
-  { value: 'fixed_scope', label: 'Escopo fechado',  description: 'Identidade visual, sites, landing pages' },
-  { value: 'value_based', label: 'Baseado em valor', description: 'Consultoria estratégica, branding de alto impacto' },
-  { value: 'package',     label: 'Pacote',          description: 'Social media, produção de conteúdo recorrente' },
-  { value: 'retainer',    label: 'Retainer/Mensal', description: 'Gestão de tráfego, manutenção, consultoria contínua' },
-]
-
-// ─── Estado inicial ───────────────────────────────────────────────────────────
-
-const INITIAL_STATE = {
-  projectName: '',
-  benchmarkId: 'id_completa',
-  pricingMethod: 'fixed_scope' as PricingMethod,
-  estimatedHours: 40,
-  revisions: 2,
-  complexity: 'standard' as ComplexityLevel,
-  urgency: 'normal' as UrgencyLevel,
-  clientSize: 'small_business' as ClientSize,
-  usageRights: 'limited' as UsageRights,
-  directCosts: [] as { id: string; label: string; amount: number }[],
-  extraMargin: 0,
+interface DirectCostRow {
+  id: string
+  label: string
+  amount: number
 }
 
-// ─── Componente seletor de opção ──────────────────────────────────────────────
-
-function OptionCard({
+function OptionRow<T extends string>({
+  value,
   selected,
-  onClick,
-  title,
-  description,
+  onSelect,
+  label,
+  desc,
+  mult,
 }: {
+  value: T
   selected: boolean
-  onClick: () => void
-  title: string
-  description?: string
+  onSelect: (v: T) => void
+  label: string
+  desc: string
+  mult: string
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={cn(
-        'flex flex-col gap-2 p-4 sm:p-5 rounded-[var(--radius-lg)] border text-left w-full',
-        'transition-all duration-150 cursor-pointer',
+      onClick={() => onSelect(value)}
+      className={`flex items-center gap-3 min-h-[60px] p-3.5 rounded-[var(--radius-md)] text-left transition-colors ${
         selected
-          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10'
-          : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-text-muted)]'
-      )}
+          ? 'border border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10'
+          : 'border border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-text-muted)]'
+      }`}
     >
-      <div className="flex items-center justify-between gap-3 w-full">
-        <span className={cn(
-          'text-base font-700 leading-snug',
-          selected ? 'text-[var(--color-text)] font-800' : 'text-[var(--color-text)]'
-        )}>
-          {title}
-        </span>
-        {selected && (
-          <CheckCircle2 size={18} className="text-[var(--color-brand-red)] flex-shrink-0" />
-        )}
-      </div>
-      {description && (
-        <span className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed font-400">
-          {description}
-        </span>
+      {selected ? (
+        <CheckCircle2 size={18} className="text-[var(--color-brand-red)] flex-shrink-0" />
+      ) : (
+        <span className="w-[18px] h-[18px] rounded-full border border-[var(--color-border)] flex-shrink-0" />
       )}
+      <span className="flex flex-col gap-0.5 flex-1 min-w-0">
+        <span className="text-sm font-700 uppercase tracking-wide text-[var(--color-text)]">{label}</span>
+        <span className="text-2xs text-[var(--color-text-secondary)] leading-snug">{desc}</span>
+      </span>
+      <span className="numeric-display text-[17px] flex-shrink-0" style={{ color: selected ? 'var(--color-brand-red)' : 'var(--color-text-muted)' }}>
+        {mult}
+      </span>
     </button>
   )
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-
 export default function CalcularPage() {
   const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(0)
-  const [form, setForm] = useState(INITIAL_STATE)
+  const [step, setStep] = useState(0)
+
+  const [projectName, setProjectName] = useState('')
+  const [clientName, setClientName] = useState('')
+  const [benchmarkId, setBenchmarkId] = useState('')
+  const [pricingMethod, setPricingMethod] = useState<PricingMethod>('fixed_scope')
+  const [estimatedHours, setEstimatedHours] = useState(0)
+  const [revisions, setRevisions] = useState(2)
+  const [complexity, setComplexity] = useState<ComplexityLevel>('standard')
+  const [urgency, setUrgency] = useState<UrgencyLevel>('normal')
+  const [clientSize, setClientSize] = useState<ClientSize>('small_business')
+  const [usageRights, setUsageRights] = useState<UsageRights>('limited')
+  const [directCosts, setDirectCosts] = useState<DirectCostRow[]>([])
+  const [extraMargin, setExtraMargin] = useState(0)
+
   const [costs, setCosts] = useState<SavedCosts>(DEFAULT_COSTS)
   const [taxRegime, setTaxRegime] = useState<TaxRegime>('mei')
-  const serviceCategories = getServicesByCategory()
-  const selectedService = getBenchmarkServiceById(form.benchmarkId)
 
-  // Carrega custos (/custos) e regime tributário (/perfil) salvos pelo usuário.
-  // Até lá, usa os padrões — o motor nunca fica sem valor-hora para calcular.
   useEffect(() => {
     setCosts(loadCosts())
     const profile = loadProfile()
     if (profile) setTaxRegime(profile.taxRegime)
   }, [])
 
-  const hourlyRate = calculateLayer1({
-    monthlyExpenses: totalMonthlyExpenses(costs),
-    desiredSalary: costs.desiredSalary,
-    technicalReserve: costs.technicalReserve,
-    profitMargin: costs.profitMargin / 100,
-    availableHours: costs.availableHours,
-    billablePercentage: costs.billablePercentage,
-  }).realHourlyRate
+  const layer1 = useMemo(
+    () =>
+      calculateLayer1({
+        monthlyExpenses: totalMonthlyExpenses(costs),
+        desiredSalary: costs.desiredSalary,
+        technicalReserve: costs.technicalReserve,
+        profitMargin: costs.profitMargin / 100,
+        availableHours: costs.availableHours,
+        billablePercentage: costs.billablePercentage,
+      }),
+    [costs]
+  )
+  const noRateWarning = layer1.realHourlyRate === 0
 
-  const update = <K extends keyof typeof INITIAL_STATE>(key: K, value: typeof INITIAL_STATE[K]) =>
-    setForm(prev => ({ ...prev, [key]: value }))
+  const minimumPrice = layer1.realHourlyRate * estimatedHours
+  const layer2 = calculateLayer2({
+    realHourlyRate: layer1.realHourlyRate,
+    pricingMethod,
+    estimatedHours,
+    revisions,
+    directCosts: directCosts.map((c) => ({ label: c.label, amount: c.amount })),
+    extraCosts: [],
+  })
+  const quote = calculateLayer3(
+    { basePrice: layer2.basePrice, complexity, urgency, clientSize, usageRights, taxRegime, extraMargin: extraMargin / 100 },
+    minimumPrice
+  )
 
-  const handleServiceSelect = (serviceId: string) => {
-    const service = getBenchmarkServiceById(serviceId)
-    if (service) {
-      setForm(prev => ({
-        ...prev,
-        benchmarkId: service.id,
-        pricingMethod: service.defaultMethod,
-        projectName: prev.projectName || service.name
-      }))
+  const benchmark = benchmarkId ? compareQuoteWithBenchmark(quote.recommended, benchmarkId) : null
+
+  const canAdvance = step === 0 ? projectName.trim().length > 0 : step === 1 ? estimatedHours > 0 : true
+  const advanceHint = step === 0 ? 'Dê um nome ao projeto para continuar' : 'Informe as horas estimadas para continuar'
+
+  const addDirectCost = () => setDirectCosts((prev) => [...prev, { id: Date.now().toString(), label: '', amount: 0 }])
+  const removeDirectCost = (id: string) => setDirectCosts((prev) => prev.filter((c) => c.id !== id))
+  const updateDirectCost = (id: string, patch: Partial<DirectCostRow>) =>
+    setDirectCosts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
+
+  const handleSaveProposal = () => {
+    let authorName: string | undefined
+    try {
+      const session = localStorage.getItem('bob_user_session')
+      if (session) authorName = JSON.parse(session).name
+    } catch {
+      // sessão inválida — segue sem nome de autor
     }
+
+    saveLastProposal({
+      id: Date.now().toString(),
+      projectName: projectName || 'Projeto sem título',
+      clientName: clientName || undefined,
+      authorName,
+      date: new Date().toLocaleDateString('pt-BR'),
+      createdAt: new Date().toISOString(),
+      form: {
+        projectName,
+        benchmarkId,
+        pricingMethod,
+        estimatedHours,
+        revisions,
+        complexity,
+        urgency,
+        clientSize,
+        usageRights,
+        directCosts,
+        extraMargin,
+      },
+      result: {
+        hourlyRate: layer1.realHourlyRate,
+        billableHours: layer1.billableHours,
+        totalMonthlyCost: layer1.totalMonthlyCost,
+        basePrice: layer2.basePrice,
+        quote,
+        belowFloor: quote.recommended < minimumPrice,
+      },
+      laborCost: layer2.laborCost,
+      revisionCost: layer2.revisionCost,
+      totalDirectCosts: layer2.totalDirectCosts,
+      benchmark,
+    })
   }
 
-  const canAdvance = () => {
-    if (currentStep === 0) return form.projectName.trim().length > 0
-    if (currentStep === 1) return form.estimatedHours > 0
-    return true
-  }
-
-  const next = () => { if (currentStep < STEPS.length - 1) setCurrentStep(s => s + 1) }
-  const prev = () => { if (currentStep > 0) setCurrentStep(s => s - 1) }
-
-  // Calcula resultado ao chegar no step 7
-  const result = currentStep === 7 ? calculateFullQuote({
-    layer1: {
-      monthlyExpenses: totalMonthlyExpenses(costs),
-      desiredSalary: costs.desiredSalary,
-      technicalReserve: costs.technicalReserve,
-      profitMargin: costs.profitMargin / 100,
-      availableHours: costs.availableHours,
-      billablePercentage: costs.billablePercentage,
-    },
-    layer2: {
-      pricingMethod: form.pricingMethod,
-      estimatedHours: form.estimatedHours,
-      revisions: form.revisions,
-      directCosts: form.directCosts,
-      extraCosts: [],
-    },
-    layer3: {
-      complexity: form.complexity,
-      urgency: form.urgency,
-      clientSize: form.clientSize,
-      usageRights: form.usageRights,
-      taxRegime,
-      extraMargin: form.extraMargin / 100,
-    },
-  }) : null
+  const benchPos = benchmark
+    ? `${Math.max(0, Math.min(100, ((quote.recommended - benchmark.service.minRate) / (benchmark.service.maxRate - benchmark.service.minRate)) * 100))}%`
+    : '0%'
+  const benchColor =
+    benchmark?.status === 'below'
+      ? 'var(--color-brand-yellow)'
+      : benchmark?.status === 'above'
+        ? 'var(--color-brand-red)'
+        : 'var(--color-brand-green)'
 
   return (
-    <>
-      <PageHeader
-        label="Motor de precificação"
-        title="Calcular Orçamento"
-        description="Preencha as etapas para gerar seu preço com metodologia profissional."
-      />
-
-      <PageContent>
-        {/* Step indicator */}
-        <div className="mb-8 -mx-6 sm:mx-0 px-6 sm:px-0 overflow-x-auto pb-2">
-          <StepIndicator steps={STEPS} currentStep={currentStep} />
+    <PageContent>
+      <div className="flex flex-col gap-[22px]">
+        {/* Cabeçalho do wizard */}
+        <div
+          className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]"
+          style={{ borderTop: '2px solid var(--color-brand-red)' }}
+        >
+          <div className="flex flex-wrap items-baseline gap-3 justify-between">
+            <div className="flex items-baseline gap-3">
+              <span className="numeric-display text-[34px] leading-none text-[var(--color-brand-red)]">
+                {String(step + 1).padStart(2, '0')}
+              </span>
+              <span className="font-display text-[15px] font-700 uppercase text-[var(--color-text-muted)]">/ 08</span>
+              <h1 className="font-display font-900 uppercase tracking-tight text-[var(--color-text)]" style={{ fontSize: 'clamp(22px,4vw,32px)' }}>
+                {STEPS[step]}
+              </h1>
+            </div>
+            <span className="label-uppercase">{Math.round(((step + 1) / 8) * 100)}% concluído</span>
+          </div>
+          <div className="h-1 w-full bg-[var(--color-bg)] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[var(--color-brand-red)] transition-[width] duration-[var(--duration-slow)] ease-out"
+              style={{ width: `${((step + 1) / 8) * 100}%` }}
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {STEPS.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setStep(i)}
+                className="flex items-center gap-1.5 h-[34px] px-2.5 border border-[var(--color-border)] text-[var(--color-text-secondary)] text-[11px] font-700 tracking-wide uppercase rounded-[var(--radius-sm)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{String(i + 1).padStart(2, '0')}</span>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="max-w-2xl mx-auto flex flex-col gap-6">
+        {noRateWarning && (
+          <div className="flex flex-wrap items-center gap-3.5 p-5 bg-[var(--color-brand-yellow)]/[.12] border border-[var(--color-brand-yellow)]/30 rounded-[var(--radius-lg)]">
+            <AlertTriangle size={18} className="text-[var(--color-brand-yellow)] flex-shrink-0" />
+            <span className="flex-1 min-w-[200px] text-sm leading-relaxed text-[var(--color-text)]">
+              Seu valor-hora é R$ 0,00, sem custos configurados o orçamento não tem base. Configure a Camada 1 primeiro.
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push('/custos')}
+              className="h-[38px] px-3.5 bg-[var(--color-brand-yellow)] text-black text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)]"
+            >
+              Ir para meus custos
+            </button>
+          </div>
+        )}
 
-          {/* ─── Step 0: Serviço ─────────────────────────────────────────────── */}
-          {currentStep === 0 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={1}
-                  total={8}
-                  title="Qual o projeto?"
-                  description="Dê um nome ao projeto e escolha o método de precificação mais adequado para este tipo de entrega."
-                />
-
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="label-uppercase">Serviço de referência (ADG Brasil / Adegraf)</span>
-                    <span className="text-[0.65rem] text-[var(--color-brand-red)] font-600">RF-09 · Calibração de mercado</span>
-                  </div>
+        <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+          <div className="flex flex-col gap-4 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+            {step === 0 && (
+              <div className="flex flex-col gap-[18px]">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Qual o projeto?</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                    Nome do trabalho, cliente e o tipo de serviço para ancorar na tabela de mercado.
+                  </p>
+                </div>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Nome do projeto</span>
+                  <input
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="Ex.: Identidade visual, Cafeteria Norte"
+                    className="h-12 px-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Cliente</span>
+                  <input
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Ex.: Cafeteria Norte"
+                    className="h-12 px-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Serviço de referência · ADG Brasil</span>
                   <select
-                    value={form.benchmarkId}
-                    onChange={e => handleServiceSelect(e.target.value)}
-                    className="w-full h-11 px-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text)] focus:border-[var(--color-brand-red)] outline-none"
+                    value={benchmarkId}
+                    onChange={(e) => setBenchmarkId(e.target.value)}
+                    className="h-12 px-3 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   >
-                    {serviceCategories.map(cat => (
-                      <optgroup key={cat.label} label={cat.label}>
-                        {cat.services.map(s => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({formatCurrency(s.recommendedRate)})
-                          </option>
-                        ))}
-                      </optgroup>
+                    <option value="">Sem referência de mercado</option>
+                    {ADEGRAF_BENCHMARKS.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
-                  {selectedService && (
-                    <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mt-0.5">
-                      {selectedService.description}
-                    </p>
-                  )}
-                </div>
-
-                <Input
-                  label="Nome do projeto"
-                  placeholder="Ex.: Identidade Visual Marca X"
-                  value={form.projectName}
-                  onChange={e => update('projectName', e.target.value)}
-                  id="project-name"
-                />
-
+                </label>
                 <div className="flex flex-col gap-2">
-                  <span className="label-uppercase">Método de precificação</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {PRICING_METHODS.map(m => (
-                      <OptionCard
-                        key={m.value}
-                        selected={form.pricingMethod === m.value}
-                        onClick={() => update('pricingMethod', m.value)}
-                        title={m.label}
-                        description={m.description}
-                      />
-                    ))}
+                  <span className="label-uppercase">Método de cobrança</span>
+                  <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                    {METHODS.map((m) => {
+                      const selected = pricingMethod === m.value
+                      return (
+                        <button
+                          key={m.value}
+                          type="button"
+                          onClick={() => setPricingMethod(m.value)}
+                          className={`flex flex-col gap-0.5 items-start min-h-16 p-3 rounded-[var(--radius-md)] text-left transition-colors ${
+                            selected
+                              ? 'border border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10'
+                              : 'border border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-text-muted)]'
+                          }`}
+                        >
+                          <span className={`text-xs font-800 uppercase tracking-wide ${selected ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>
+                            {m.label}
+                          </span>
+                          <span className="text-2xs text-[var(--color-text-muted)] leading-snug">{m.desc}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* ─── Step 1: Tempo ───────────────────────────────────────────────── */}
-          {currentStep === 1 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={2}
-                  total={8}
-                  title="Quanto tempo leva?"
-                  description="Estime o total de horas dedicadas ao projeto, incluindo pesquisa, execução e revisões."
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Horas estimadas"
-                    type="number"
-                    min={0.5}
-                    value={form.estimatedHours}
-                    onChange={e => update('estimatedHours', parseFloat(e.target.value) || 0)}
-                    suffix={<span className="text-xs">h</span>}
-                    id="estimated-hours"
-                    hint="Inclua pesquisa, execução e entregas"
-                  />
-                  <Input
-                    label="Revisões inclusas"
-                    type="number"
-                    min={0}
-                    max={20}
-                    value={form.revisions}
-                    onChange={e => update('revisions', parseInt(e.target.value) || 0)}
-                    id="revisions"
-                    hint="Rodadas de ajuste já no escopo"
-                  />
+            {step === 1 && (
+              <div className="flex flex-col gap-[18px]">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Quanto tempo leva?</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                    Estime as horas de execução reais, incluindo pesquisa, apresentação e ajustes previstos.
+                  </p>
                 </div>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Horas estimadas</span>
+                  <input
+                    type="number"
+                    value={estimatedHours || ''}
+                    onChange={(e) => setEstimatedHours(parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className="h-14 px-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] font-display font-900 text-2xl text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Rodadas de revisão inclusas</span>
+                  <input
+                    type="number"
+                    value={revisions}
+                    onChange={(e) => setRevisions(parseInt(e.target.value) || 0)}
+                    className="h-12 px-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  />
+                  <span className="text-2xs text-[var(--color-text-muted)]">Cada rodada entra como meia hora de contingência por revisão.</span>
+                </label>
+                <div className="flex flex-col gap-1.5 p-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                  <span className="label-uppercase">Mão de obra a este ritmo</span>
+                  <span className="numeric-display text-2xl text-[var(--color-text)]">{formatCurrency(layer2.laborCost)}</span>
+                  <span className="text-2xs text-[var(--color-text-muted)]">{estimatedHours}h × {formatCurrency(layer1.realHourlyRate)} de valor-hora real</span>
+                </div>
+              </div>
+            )}
 
-                {/* Preview do custo de mão de obra */}
-                {form.estimatedHours > 0 && (
-                  <div className="flex items-center justify-between p-4 bg-[var(--color-surface-raised)] rounded-[var(--radius-md)]">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="label-uppercase">Custo de mão de obra (estimativa)</span>
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {form.estimatedHours}h × {formatCurrency(hourlyRate)}/h
-                      </span>
-                    </div>
-                    <span className="numeric-display text-xl font-900 text-[var(--color-text)]">
-                      {formatCurrency(form.estimatedHours * hourlyRate)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ─── Step 2: Complexidade ─────────────────────────────────────────── */}
-          {currentStep === 2 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={3}
-                  total={8}
-                  title="Qual a complexidade?"
-                  description="Projetos mais complexos exigem mais esforço, pesquisa e gestão de risco. Isso precisa estar no preço."
-                />
+            {step === 2 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Qual a complexidade?</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">Quanto mais variáveis fora do seu controle, maior o multiplicador.</p>
+                </div>
                 <div className="flex flex-col gap-2">
                   {(Object.entries(COMPLEXITY_MULTIPLIERS) as [ComplexityLevel, typeof COMPLEXITY_MULTIPLIERS[ComplexityLevel]][]).map(([key, val]) => (
-                    <OptionCard
-                      key={key}
-                      selected={form.complexity === key}
-                      onClick={() => update('complexity', key)}
-                      title={`${val.label} · ×${val.multiplier}`}
-                      description={val.description}
-                    />
+                    <OptionRow key={key} value={key} selected={complexity === key} onSelect={setComplexity} label={val.label} desc={val.description} mult={`×${val.multiplier}`} />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* ─── Step 3: Urgência ─────────────────────────────────────────────── */}
-          {currentStep === 3 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={4}
-                  total={8}
-                  title="Qual a urgência?"
-                  description="Prazos apertados reorganizam sua agenda e têm custo real. A urgência precisa ser monetizada."
-                />
+            {step === 3 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Qual a urgência?</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">Prazo curto custa agenda, madrugada e fim de semana. Isso tem preço.</p>
+                </div>
                 <div className="flex flex-col gap-2">
                   {(Object.entries(URGENCY_MULTIPLIERS) as [UrgencyLevel, typeof URGENCY_MULTIPLIERS[UrgencyLevel]][]).map(([key, val]) => (
-                    <OptionCard
-                      key={key}
-                      selected={form.urgency === key}
-                      onClick={() => update('urgency', key)}
-                      title={`${val.label} · ×${val.multiplier}`}
-                      description={val.description}
-                    />
+                    <OptionRow key={key} value={key} selected={urgency === key} onSelect={setUrgency} label={val.label} desc={val.description} mult={`×${val.multiplier}`} />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* ─── Step 4: Porte do cliente ─────────────────────────────────────── */}
-          {currentStep === 4 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={5}
-                  total={8}
-                  title="Qual o porte do cliente?"
-                  description="O valor gerado pelo seu trabalho é diferente para uma startup e para uma multinacional. O preço deve refletir isso."
-                />
+            {step === 4 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Qual o porte do cliente?</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">O mesmo trabalho gera retornos diferentes. Cobre proporcional ao impacto.</p>
+                </div>
                 <div className="flex flex-col gap-2">
                   {(Object.entries(CLIENT_SIZE_MULTIPLIERS) as [ClientSize, typeof CLIENT_SIZE_MULTIPLIERS[ClientSize]][]).map(([key, val]) => (
-                    <OptionCard
-                      key={key}
-                      selected={form.clientSize === key}
-                      onClick={() => update('clientSize', key)}
-                      title={`${val.label} · ×${val.multiplier}`}
-                      description={val.description}
-                    />
+                    <OptionRow key={key} value={key} selected={clientSize === key} onSelect={setClientSize} label={val.label} desc={val.description} mult={`×${val.multiplier}`} />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* ─── Step 5: Direitos de uso ──────────────────────────────────────── */}
-          {currentStep === 5 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={6}
-                  total={8}
-                  title="Direitos de uso"
-                  description="Quanto mais ampla a exploração comercial do seu trabalho, maior deve ser a remuneração."
-                />
+            {step === 5 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Direitos de uso</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">Você não vende arquivo, vende licença. Quanto mais amplo o uso, maior o valor.</p>
+                </div>
                 <div className="flex flex-col gap-2">
                   {(Object.entries(USAGE_RIGHTS_MULTIPLIERS) as [UsageRights, typeof USAGE_RIGHTS_MULTIPLIERS[UsageRights]][]).map(([key, val]) => (
-                    <OptionCard
-                      key={key}
-                      selected={form.usageRights === key}
-                      onClick={() => update('usageRights', key)}
-                      title={`${val.label} · ×${val.multiplier}`}
-                      description={val.description}
-                    />
+                    <OptionRow key={key} value={key} selected={usageRights === key} onSelect={setUsageRights} label={val.label} desc={val.description} mult={`×${val.multiplier}`} />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* ─── Step 6: Custos extras ────────────────────────────────────────── */}
-          {currentStep === 6 && (
-            <Card>
-              <CardContent className="flex flex-col gap-5 p-6">
-                <StepHeader
-                  step={7}
-                  total={8}
-                  title="Custos extras"
-                  description="Terceiros, licenças, deslocamento — tudo que você vai desembolsar especificamente por este projeto."
-                />
-
-                {form.directCosts.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-8 border border-dashed border-[var(--color-border)] rounded-[var(--radius-md)]">
-                    <span className="text-xs text-[var(--color-text-muted)]">Nenhum custo extra cadastrado</span>
-                    <span className="text-[0.65rem] text-[var(--color-text-muted)]">
-                      Se não houver, avance para o próximo passo
-                    </span>
+            {step === 6 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-display-sm text-[var(--color-text)]">Custos extras</h2>
+                  <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                    Terceiros, licenças, deslocamento, equipamento alugado. Repasse sem embutir no seu lucro.
+                  </p>
+                </div>
+                {directCosts.length === 0 && (
+                  <div className="p-5 border border-dashed border-[var(--color-border)] rounded-[var(--radius-md)] text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                    Nenhum custo direto neste projeto. Se você vai pagar alguém ou comprar licença, lance aqui.
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {form.directCosts.map((cost, i) => (
-                      <div key={cost.id} className="flex items-end gap-3">
-                        <Input
-                          label={i === 0 ? 'Descrição' : undefined}
-                          placeholder="Ex.: Licença de fonte"
-                          value={cost.label}
-                          onChange={e => {
-                            const updated = [...form.directCosts]
-                            updated[i] = { ...updated[i], label: e.target.value }
-                            update('directCosts', updated)
-                          }}
-                          className="flex-1"
+                )}
+                <div className="flex flex-col gap-2.5">
+                  {directCosts.map((c) => (
+                    <div key={c.id} className="flex flex-wrap gap-2.5 items-end">
+                      <label className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
+                        <span className="label-uppercase">Descrição</span>
+                        <input
+                          value={c.label}
+                          onChange={(e) => updateDirectCost(c.id, { label: e.target.value })}
+                          placeholder="Ex.: Ilustrador terceirizado"
+                          className="h-[46px] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                         />
-                        <CurrencyInput
-                          label={i === 0 ? 'Valor' : undefined}
-                          value={cost.amount}
-                          onChange={v => {
-                            const updated = [...form.directCosts]
-                            updated[i] = { ...updated[i], amount: v }
-                            update('directCosts', updated)
-                          }}
-                          className="w-32"
+                      </label>
+                      <label className="flex flex-col gap-1.5 w-[140px]">
+                        <span className="label-uppercase">Valor</span>
+                        <input
+                          type="number"
+                          value={c.amount || ''}
+                          onChange={(e) => updateDirectCost(c.id, { amount: parseFloat(e.target.value) || 0 })}
+                          placeholder="0"
+                          className="h-[46px] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                         />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removeDirectCost(c.id)}
+                        title="Remover"
+                        className="flex items-center justify-center w-[46px] h-[46px] border border-[var(--color-border)] text-[var(--color-text-muted)] rounded-[var(--radius-md)] hover:text-[var(--color-brand-red)] hover:border-[var(--color-brand-red)] transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addDirectCost}
+                  className="flex items-center gap-2 self-start h-[42px] px-4 border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:text-[var(--color-text)] hover:border-[var(--color-brand-red)] transition-colors"
+                >
+                  <Plus size={15} />
+                  Adicionar custo direto
+                </button>
+                <label className="flex flex-col gap-1.5">
+                  <span className="label-uppercase">Margem adicional (%)</span>
+                  <input
+                    type="number"
+                    value={extraMargin || ''}
+                    onChange={(e) => setExtraMargin(parseFloat(e.target.value) || 0)}
+                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)] max-w-[200px]"
+                  />
+                  <span className="text-2xs text-[var(--color-text-muted)]">Espaço para negociar desconto sem furar o piso.</span>
+                </label>
+              </div>
+            )}
+
+            {step === 7 && (
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1">
+                  <span className="label-uppercase text-[var(--color-brand-red)]">{projectName || 'Projeto'}{clientName ? ` · ${clientName}` : ''}</span>
+                  <h2 className="text-display-sm text-[var(--color-text)]">Seu orçamento</h2>
+                </div>
+                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                  <div className="flex flex-col gap-1.5 p-[18px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                    <span className="label-uppercase">Mínimo</span>
+                    <span className="numeric-display text-2xl text-[var(--color-text-secondary)]">{formatCurrency(quote.minimum)}</span>
+                    <span className="text-2xs text-[var(--color-text-muted)]">Piso técnico · horas × valor-hora</span>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-[18px] bg-[var(--color-brand-red)]/10 border border-[var(--color-brand-red)] rounded-[var(--radius-md)]">
+                    <span className="label-uppercase text-[var(--color-brand-red)]">Recomendado</span>
+                    <span className="numeric-display text-[32px] text-[var(--color-brand-red)]">{formatCurrency(quote.recommended)}</span>
+                    <span className="text-2xs text-[var(--color-text-secondary)]">3 camadas + gross-up {taxRegime.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-[18px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                    <span className="label-uppercase">Premium</span>
+                    <span className="numeric-display text-2xl text-[var(--color-text-secondary)]">{formatCurrency(quote.premium)}</span>
+                    <span className="text-2xs text-[var(--color-text-muted)]">Valor percebido alto</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2.5 pt-4 border-t border-[var(--color-border)]">
+                  <span className="label-uppercase">Composição do preço</span>
+                  <div className="flex justify-between gap-3 text-xs">
+                    <span className="text-[var(--color-text-secondary)]">Mão de obra · {estimatedHours}h × {formatCurrency(layer1.realHourlyRate)}</span>
+                    <span className="font-mono text-[var(--color-text)]">{formatCurrency(layer2.laborCost)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-xs">
+                    <span className="text-[var(--color-text-secondary)]">Contingência de revisões</span>
+                    <span className="font-mono text-[var(--color-text)]">{formatCurrency(layer2.revisionCost)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-xs">
+                    <span className="text-[var(--color-text-secondary)]">Custos diretos</span>
+                    <span className="font-mono text-[var(--color-text)]">{formatCurrency(layer2.totalDirectCosts)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-xs pt-2 border-t border-[var(--color-border-subtle)]">
+                    <span className="font-700 text-[var(--color-text)]">Preço base · Camada 2</span>
+                    <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(layer2.basePrice)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-xs">
+                    <span className="text-[var(--color-text-secondary)]">Ajuste de mercado ×{quote.multiplierDetail.combined.toFixed(2)}</span>
+                    <span className="font-mono text-[var(--color-text)]">{formatCurrency(quote.adjustedPrice)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-xs">
+                    <span className="text-[var(--color-text-secondary)]">Gross-up tributário · {(quote.taxDetail.rate * 100).toFixed(1)}%</span>
+                    <span className="font-mono text-[var(--color-text)]">{formatCurrency(quote.taxDetail.taxAmount)}</span>
+                  </div>
+                  <div className="flex justify-between gap-3 text-xs">
+                    <span className="text-[var(--color-text-secondary)]">Margem adicional</span>
+                    <span className="font-mono text-[var(--color-text)]">{formatCurrency(quote.extraMarginAmount)}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-4 border-t border-[var(--color-border)]">
+                  <span className="label-uppercase">Multiplicadores aplicados</span>
+                  {[
+                    { category: 'Complexidade', ...quote.multiplierDetail.complexity },
+                    { category: 'Urgência', ...quote.multiplierDetail.urgency },
+                    { category: 'Porte do cliente', ...quote.multiplierDetail.clientSize },
+                    { category: 'Direitos de uso', ...quote.multiplierDetail.usageRights },
+                  ].map((m) => (
+                    <div key={m.category} className="flex items-center justify-between gap-3 p-2.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                      <div className="flex flex-col">
+                        <span className="text-2xs tracking-wide uppercase text-[var(--color-text-muted)]">{m.category}</span>
+                        <span className="text-xs font-700 text-[var(--color-text)]">{m.label}</span>
                       </div>
-                    ))}
+                      <span className="numeric-display text-base text-[var(--color-brand-red)]">×{m.multiplier}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {benchmark && (
+                  <div className="flex flex-col gap-2.5 p-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+                    <span className="label-uppercase text-[var(--color-brand-yellow)]">Comparativo ADG Brasil · {benchmark.service.name}</span>
+                    <div className="relative h-2.5 w-full bg-[var(--color-surface-raised)] rounded-full">
+                      <div className="absolute -top-1 w-[3px] h-[18px] bg-[var(--color-brand-red)]" style={{ left: benchPos }} />
+                    </div>
+                    <div className="flex justify-between gap-2.5">
+                      <span className="text-2xs text-[var(--color-text-muted)]">{formatCurrency(benchmark.service.minRate)} – {formatCurrency(benchmark.service.maxRate)}</span>
+                      <span className="text-2xs text-[var(--color-text-muted)]">média {formatCurrency(benchmark.service.recommendedRate)}</span>
+                    </div>
+                    <span className="text-xs font-700" style={{ color: benchColor }}>{benchmark.statusText}</span>
                   </div>
                 )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="self-start text-[var(--color-text-muted)]"
-                  onClick={() => update('directCosts', [
-                    ...form.directCosts,
-                    { id: Date.now().toString(), label: '', amount: 0 }
-                  ])}
-                >
-                  + Adicionar custo
-                </Button>
-
-                <div className="flex flex-col gap-1.5">
-                  <Input
-                    label="Margem extra desejada (%)"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={form.extraMargin}
-                    onChange={e => update('extraMargin', parseFloat(e.target.value) || 0)}
-                    suffix={<span className="text-xs">%</span>}
-                    hint="Adicione margem de negociação ou de crescimento ao preço final"
-                    id="extra-margin"
-                  />
+                <div className="flex flex-wrap gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveProposal}
+                    className="flex items-center gap-2.5 h-[46px] px-5 bg-[var(--color-brand-red)] text-white font-display font-900 text-[15px] uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+                  >
+                    <FileText size={16} />
+                    Salvar proposta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { handleSaveProposal(); router.push('/propostas/preview') }}
+                    className="flex items-center gap-2.5 h-[46px] px-[18px] border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-[15px] uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface-raised)] transition-colors"
+                  >
+                    <Download size={16} />
+                    Ver proposta em PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setStep(0); setProjectName(''); setClientName(''); setDirectCosts([]) }}
+                    className="h-[46px] px-[18px] border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-[15px] uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface-raised)] transition-colors"
+                  >
+                    Novo cálculo
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* ─── Step 7: Resultado ───────────────────────────────────────────── */}
-          {currentStep === 7 && result && (
-            <div className="flex flex-col gap-4">
-
-              <StepHeader
-                step={8}
-                total={8}
-                title="Seu orçamento"
-                description="Com base na metodologia em 3 camadas. O preço recomendado cobre 100% dos seus custos reais mais a margem configurada."
-              />
-
-              {/* Alerta de preço abaixo do piso */}
-              {result.belowFloor && (
-                <div className="flex items-start gap-3 p-4 border border-[var(--color-brand-yellow)]/40 bg-[var(--color-brand-yellow)]/8 rounded-[var(--radius-lg)]">
-                  <AlertTriangle size={16} className="text-[var(--color-brand-yellow)] flex-shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-600 text-[var(--color-brand-yellow)]">Atenção: abaixo do piso técnico</span>
-                    <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                      O preço calculado está abaixo do mínimo necessário para cobrir seus custos operacionais.
-                      Revise os multiplicadores ou aumente as horas estimadas.
-                    </p>
-                  </div>
+            {/* Navegação */}
+            <div className="flex flex-wrap gap-2.5 pt-4 border-t border-[var(--color-border)]">
+              {step > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s - 1)}
+                  className="flex items-center gap-2 h-[46px] px-[18px] border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <ArrowLeft size={15} />
+                  Voltar
+                </button>
+              )}
+              {step < 7 && !canAdvance && (
+                <div className="flex items-center gap-3 ml-auto flex-wrap justify-end">
+                  <span className="text-2xs tracking-wide uppercase text-[var(--color-brand-yellow)]">{advanceHint}</span>
+                  <span className="flex items-center gap-2 h-[46px] px-5 bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] opacity-40 pointer-events-none">
+                    Continuar
+                    <ArrowRight size={15} />
+                  </span>
                 </div>
               )}
-
-              {/* 3 faixas de resultado */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  { label: 'Mínimo', sublabel: 'Piso técnico', value: result.quote.minimum, color: 'border-[var(--color-border)]', textColor: 'text-[var(--color-text-secondary)]', accent: 'none' as const },
-                  { label: 'Recomendado', sublabel: 'Com todos os custos cobertos', value: result.quote.recommended, color: 'border-[var(--color-brand-red)]', textColor: 'text-[var(--color-brand-red)]', accent: 'red' as const },
-                  { label: 'Premium', sublabel: 'Valor percebido alto', value: result.quote.premium, color: 'border-[var(--color-border)]', textColor: 'text-[var(--color-text-secondary)]', accent: 'none' as const },
-                ].map(tier => (
-                  <div
-                    key={tier.label}
-                    className={cn(
-                      'flex flex-col gap-3 p-5 rounded-[var(--radius-lg)] border bg-[var(--color-surface)]',
-                      tier.color,
-                      tier.accent === 'red' && 'bg-[var(--color-brand-red)]/5'
-                    )}
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className={cn('label-uppercase font-800', tier.accent === 'red' ? 'text-[var(--color-brand-red)]' : '')}>
-                        {tier.label}
-                      </span>
-                      <span className="text-xs text-[var(--color-text-muted)]">{tier.sublabel}</span>
-                    </div>
-                    <span className={cn('font-display font-900 text-3xl sm:text-4xl leading-tight tracking-tight mt-1', tier.textColor)}>
-                      {formatCurrency(tier.value)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Breakdown dos multiplicadores */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Composição do preço</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                  {[
-                    { label: 'Custo base (horas × valor-hora)', value: result.basePrice },
-                    { label: 'Ajuste de mercado (multiplicadores)', value: result.quote.adjustedPrice - result.basePrice },
-                    { label: `Impostos (${(result.quote.taxDetail.rate * 100).toFixed(1)}% gross-up)`, value: result.quote.taxDetail.taxAmount },
-                  ].map(item => {
-                    const pct = result.quote.recommended > 0
-                      ? Math.abs(item.value / result.quote.recommended * 100)
-                      : 0
-                    return (
-                      <div key={item.label} className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[var(--color-text-secondary)]">{item.label}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[var(--color-text-muted)]">{pct.toFixed(0)}%</span>
-                            <span className="font-600 text-[var(--color-text)] tabular-nums">
-                              {formatCurrency(item.value)}
-                            </span>
-                          </div>
-                        </div>
-                        <Progress value={pct} color="red" size="xs" />
-                      </div>
-                    )
-                  })}
-
-                  <div className="divider mt-1" />
-
-                  {/* Detalhes dos multiplicadores */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    {[
-                      { label: 'Complexidade', detail: result.quote.multiplierDetail.complexity },
-                      { label: 'Urgência', detail: result.quote.multiplierDetail.urgency },
-                      { label: 'Porte do cliente', detail: result.quote.multiplierDetail.clientSize },
-                      { label: 'Direitos de uso', detail: result.quote.multiplierDetail.usageRights },
-                    ].map(m => (
-                      <div key={m.label} className="flex items-center justify-between text-xs py-1 px-2 rounded-[var(--radius-sm)] bg-[var(--color-surface-raised)]">
-                        <span className="text-[var(--color-text-muted)]">{m.label}</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[0.65rem] text-[var(--color-text-muted)]">{m.detail.label}</span>
-                          <Badge variant={m.detail.multiplier > 1 ? 'warning' : 'default'}>
-                            ×{m.detail.multiplier}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Comparativo com Adegraf / ADG Brasil */}
-              {(() => {
-                const bmark = compareQuoteWithBenchmark(result.quote.recommended, form.benchmarkId)
-                if (!bmark) return null
-                return (
-                  <Card accent="red">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm">Comparativo com Mercado (ADG Brasil / Adegraf)</CardTitle>
-                        <Badge variant={bmark.status === 'below' ? 'warning' : bmark.status === 'premium' ? 'warning' : 'default'}>
-                          {bmark.status === 'below' ? 'Abaixo da referência' : bmark.status === 'premium' ? 'Faixa Superior / Sênior' : 'Média de Mercado'}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-3">
-                      <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                        Para o serviço <strong className="text-[var(--color-text)]">{bmark.service.name}</strong>, a referência praticada por agências e profissionais plenos/sêniores varia de <strong className="text-[var(--color-text)]">{formatCurrency(bmark.service.minRate)}</strong> a <strong className="text-[var(--color-text)]">{formatCurrency(bmark.service.maxRate)}</strong>.
-                      </p>
-
-                      <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] text-center">
-                        <div className="flex flex-col">
-                          <span className="text-[0.65rem] text-[var(--color-text-muted)] uppercase">Piso ADG</span>
-                          <span className="text-xs font-700 text-[var(--color-text-secondary)]">{formatCurrency(bmark.service.minRate)}</span>
-                        </div>
-                        <div className="flex flex-col border-x border-[var(--color-border)]">
-                          <span className="text-[0.65rem] text-[var(--color-brand-red)] font-600 uppercase">Média Recomendada</span>
-                          <span className="text-xs font-700 text-[var(--color-text)]">{formatCurrency(bmark.service.recommendedRate)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[0.65rem] text-[var(--color-text-muted)] uppercase">Teto Comum</span>
-                          <span className="text-xs font-700 text-[var(--color-text-secondary)]">{formatCurrency(bmark.service.maxRate)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-1">
-                        <Info size={13} className="text-[var(--color-text-muted)] flex-shrink-0" />
-                        <span className="text-[0.7rem] text-[var(--color-text-muted)]">
-                          {bmark.statusText}. Lembre-se: tabelas não são travas fixas, servem para ancoragem e negociação.
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })()}
-
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={() => {
-                  saveLastProposal({
-                    id: Date.now().toString(),
-                    projectName: form.projectName || 'Projeto sem título',
-                    date: new Date().toLocaleDateString('pt-BR'),
-                    createdAt: new Date().toISOString(),
-                    form,
-                    result,
-                    benchmark: compareQuoteWithBenchmark(result.quote.recommended, form.benchmarkId),
-                  })
-                  router.push('/propostas/preview')
-                }}
-              >
-                <TrendingUp size={15} className="mr-2" />
-                Gerar Proposta PDF
-              </Button>
+              {step < 7 && canAdvance && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s + 1)}
+                  className="flex items-center gap-2 h-[46px] px-5 ml-auto bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+                >
+                  Continuar
+                  <ArrowRight size={15} />
+                </button>
+              )}
             </div>
-          )}
-
-          {/* ─── Navegação ───────────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={prev}
-              disabled={currentStep === 0}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft size={15} />
-              Voltar
-            </Button>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--color-text-muted)]">
-                {currentStep + 1} / {STEPS.length}
-              </span>
-            </div>
-
-            {currentStep < STEPS.length - 1 ? (
-              <Button
-                size="md"
-                onClick={next}
-                disabled={!canAdvance()}
-                className="flex items-center gap-2"
-              >
-                Avançar
-                <ArrowRight size={15} />
-              </Button>
-            ) : (
-              <Button variant="secondary" size="md" onClick={() => setCurrentStep(0)}>
-                Novo orçamento
-              </Button>
-            )}
           </div>
 
+          {/* Coluna sticky: preço ao vivo */}
+          <aside
+            className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] sticky"
+            style={{ borderTop: '2px solid var(--color-brand-red)', top: 88 }}
+          >
+            <span className="label-uppercase">Preço recomendado · ao vivo</span>
+            <span className="numeric-display leading-[.9] text-[var(--color-text)]" style={{ fontSize: 'clamp(36px,6vw,56px)' }}>
+              {formatCurrency(quote.recommended)}
+            </span>
+            <div className="flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]">
+              <div className="flex justify-between gap-2.5 text-xs">
+                <span className="text-[var(--color-text-secondary)]">Piso técnico</span>
+                <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(quote.minimum)}</span>
+              </div>
+              <div className="flex justify-between gap-2.5 text-xs">
+                <span className="text-[var(--color-text-secondary)]">Preço base</span>
+                <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(layer2.basePrice)}</span>
+              </div>
+              <div className="flex justify-between gap-2.5 text-xs">
+                <span className="text-[var(--color-text-secondary)]">Multiplicador combinado</span>
+                <span className="font-mono font-700 text-[var(--color-brand-red)]">×{quote.multiplierDetail.combined.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between gap-2.5 text-xs">
+                <span className="text-[var(--color-text-secondary)]">Imposto embutido</span>
+                <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(quote.taxDetail.taxAmount)}</span>
+              </div>
+              <div className="flex justify-between gap-2.5 text-xs">
+                <span className="text-[var(--color-text-secondary)]">Valor-hora real</span>
+                <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(layer1.realHourlyRate)}</span>
+              </div>
+            </div>
+            <span className="text-2xs leading-relaxed text-[var(--color-text-muted)]">
+              O número muda a cada escolha. Nada aqui é estimativa de vitrine, é o seu custo com o mercado aplicado em cima.
+            </span>
+          </aside>
         </div>
-      </PageContent>
-    </>
+      </div>
+    </PageContent>
   )
 }

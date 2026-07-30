@@ -6,8 +6,8 @@ import type {
   ClientSize,
   UsageRights,
   FullCalculationResult,
-} from '@/lib/pricing'
-import type { compareQuoteWithBenchmark } from '@/lib/pricing/adegraf'
+} from '@/modules/pricing/lib'
+import type { compareQuoteWithBenchmark } from '@/modules/pricing/lib/adegraf'
 
 /**
  * Persistência local (MVP sem backend — RF-* do PRD dependem destes dados
@@ -58,8 +58,14 @@ export interface SavedProposal {
   /** ISO 8601 — usado para agrupar por mês no gráfico de pipeline */
   createdAt: string
   clientName?: string
+  /** Nome de quem assina a proposta (perfil/sessão no momento do cálculo) */
+  authorName?: string
   form: SavedProposalForm
   result: FullCalculationResult
+  /** Breakdown da Camada 2 no momento do cálculo — para o documento de proposta não depender dos custos atuais. */
+  laborCost?: number
+  revisionCost?: number
+  totalDirectCosts?: number
   benchmark: ReturnType<typeof compareQuoteWithBenchmark>
 }
 
