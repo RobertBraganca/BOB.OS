@@ -15,7 +15,7 @@ export default function PrivacidadePage() {
           <h1 className="text-display-md text-[var(--color-text)]">Política de Privacidade</h1>
           <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
             Esta página está em elaboração. O BOB.OS coleta apenas os dados estritamente
-            necessários para calcular seu valor-hora e gerar orçamentos — despesas, pró-labore e
+            necessários para calcular seu valor-hora e gerar orçamentos: despesas, pró-labore e
             dados profissionais informados por você. A política completa, em conformidade com a
             LGPD, será publicada antes do lançamento público do produto.
           </p>

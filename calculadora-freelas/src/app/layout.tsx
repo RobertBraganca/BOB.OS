@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'BOB.OS — Calculadora de Freelas',
+    default: 'BOB.OS · Calculadora de Freelas',
     template: '%s | BOB.OS',
   },
   description:
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'O DESIGNER BOB®', url: 'https://odesignerbob.com.br' }],
   creator: 'O DESIGNER BOB®',
   openGraph: {
-    title: 'BOB.OS — Calculadora de Freelas',
+    title: 'BOB.OS · Calculadora de Freelas',
     description: 'Precifique com segurança técnica e comercial. Motor de cálculo em 3 camadas para profissionais criativos.',
     type: 'website',
     locale: 'pt_BR',

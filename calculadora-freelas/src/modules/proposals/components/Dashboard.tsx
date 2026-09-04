@@ -195,7 +195,7 @@ export function Dashboard() {
                 </div>
                 <h2 className="h2 text-[var(--color-text)] max-w-[26ch]">Seu valor-hora ainda não existe.</h2>
                 <p className="text-sm leading-relaxed text-[var(--color-text-secondary)] max-w-[60ch]">
-                  Nenhum custo configurado — então nenhum número aqui seria verdade. Preencha despesas, pró-labore e horas faturáveis: leva três minutos e libera todo o resto do sistema.
+                  Nenhum custo configurado, então nenhum número aqui seria verdade. Preencha despesas, pró-labore e horas faturáveis: leva três minutos e libera todo o resto do sistema.
                 </p>
                 <div className="flex flex-wrap gap-2.5">
                   <Button asChild>

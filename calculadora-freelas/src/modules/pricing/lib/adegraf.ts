@@ -85,7 +85,7 @@ export const ADEGRAF_BENCHMARKS: BenchmarkService[] = [
   },
   {
     id: 'app_design',
-    name: 'UI/UX Design de Aplicativo (MVP — até 15 telas)',
+    name: 'UI/UX Design de Aplicativo (MVP, até 15 telas)',
     category: 'web_ui',
     categoryLabel: 'Web Design & UI/UX',
     defaultMethod: 'value_based',

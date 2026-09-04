@@ -145,7 +145,7 @@ export default function ConfiguracoesPage() {
             <div className="flex flex-col gap-0.5 flex-1 min-w-[200px]">
               <span className="text-sm font-700 text-[var(--color-text)]">Contribuir com dados de mercado</span>
               <span className="text-2xs leading-relaxed text-[var(--color-text-muted)]">
-                Envia o resultado de cada proposta salva de forma anônima — sem nome, e-mail ou dado do seu cliente — pra ajudar a construir o benchmark de mercado do BOB.OS. Desligado por padrão.
+                Envia o resultado de cada proposta salva de forma anônima (sem nome, e-mail ou dado do seu cliente) pra ajudar a construir o benchmark de mercado do BOB.OS. Desligado por padrão.
               </span>
             </div>
             <Toggle on={prefs.contributeToMarketData} onToggle={() => updatePref({ contributeToMarketData: !prefs.contributeToMarketData })} />

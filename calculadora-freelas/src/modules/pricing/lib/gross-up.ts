@@ -27,23 +27,23 @@ export const TAX_RATES: Record<TaxRegime, {
   pf: {
     label: 'Pessoa Física (IRPF)',
     rate: 0.275,
-    description: 'Alíquota máxima do IRPF (27.5%) — conservadora para PF sem deduções',
+    description: 'Alíquota máxima do IRPF (27.5%), conservadora para PF sem deduções',
     disclaimer: 'Alíquota efetiva pode ser menor com deduções. Consulte seu contador.',
   },
   mei: {
     label: 'MEI',
     rate: 0.06,
-    description: 'DAS do MEI — baixa carga tributária, mas com limitação de faturamento',
+    description: 'DAS do MEI: baixa carga tributária, mas com limitação de faturamento',
     disclaimer: 'Válido enquanto dentro do limite anual do MEI (R$ 81.000/ano).',
   },
   simples: {
     label: 'Simples Nacional',
     rate: 0.115,
-    description: 'Alíquota média do Anexo III (serviços) — varia de 6% a 15.5%',
+    description: 'Alíquota média do Anexo III (serviços), varia de 6% a 15.5%',
     disclaimer: 'Alíquota varia por faixa de faturamento e atividade. Use seu DAS real.',
   },
   lucro_presumido: {
-    label: 'PJ — Lucro Presumido',
+    label: 'PJ (Lucro Presumido)',
     rate: 0.1333,
     description: 'Carga total aproximada: IRPJ (4.8%) + CSLL (2.88%) + PIS (0.65%) + COFINS (3%) + ISS (2%) ≈ 13.33%',
     disclaimer: 'Carga pode variar. Consulte sua contabilidade.',

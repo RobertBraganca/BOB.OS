@@ -101,7 +101,7 @@ export default function OnboardingPage() {
                 <span className="label-uppercase text-[var(--color-brand-red)]">{STEP_LABELS[0]}</span>
                 <h1 className="h1 text-[var(--color-text)]">Antes do preço, o profissional.</h1>
                 <p className="text-base leading-relaxed text-[var(--color-text-secondary)] max-w-[52ch]">
-                  Seu nome assina a proposta. Sua área e seu regime tributário definem quanto imposto entra no preço — não no seu lucro.
+                  Seu nome assina a proposta. Sua área e seu regime tributário definem quanto imposto entra no preço, não no seu lucro.
                 </p>
               </div>
 
@@ -184,7 +184,7 @@ export default function OnboardingPage() {
                 <span className="label-uppercase text-[var(--color-brand-red)]">{STEP_LABELS[1]}</span>
                 <h1 className="h1 text-[var(--color-text)]">Quanto custa você existir?</h1>
                 <p className="text-base leading-relaxed text-[var(--color-text-secondary)] max-w-[52ch]">
-                  Números aproximados já servem. Você refina tudo depois em Meus custos — e o piso se recalcula na hora.
+                  Números aproximados já servem. Você refina tudo depois em Meus custos, e o piso se recalcula na hora.
                 </p>
               </div>
 
@@ -288,7 +288,7 @@ export default function OnboardingPage() {
                 <div className="flex items-center gap-3 p-4 bg-[var(--color-brand-yellow)]/[.12] border border-[var(--color-brand-yellow)]/30 rounded-[var(--radius-md)]">
                   <AlertTriangle size={17} className="text-[var(--color-brand-yellow)] flex-shrink-0" />
                   <span className="text-xs leading-relaxed text-[var(--color-text)]">
-                    Ainda está em R$ 0,00 — volte ao passo 02 e informe pró-labore e horas.
+                    Ainda está em R$ 0,00. Volte ao passo 02 e informe pró-labore e horas.
                   </span>
                 </div>
               )}
