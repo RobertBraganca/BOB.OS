@@ -125,7 +125,7 @@ function Sidebar({ className, open = false, onClose }: SidebarProps) {
       {/* Header com Logo */}
       <div className={cn('flex items-center gap-2 h-[var(--sidebar-header-height)] border-b border-[var(--color-border)]', isCollapsed ? 'justify-center px-2' : 'justify-between px-[18px]')}>
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden group" title="Ir para o topo · página inicial">
-          <Logo height={isCollapsed ? 24 : 80} className="group-hover:scale-105 transition-transform" />
+          <Logo height={isCollapsed ? 22 : 28} className="group-hover:scale-105 transition-transform" />
         </Link>
 
         {!isCollapsed && (

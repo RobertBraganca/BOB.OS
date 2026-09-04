@@ -111,7 +111,10 @@
   /* ─── Layout ─────────────────────────────────────────────────────────────── */
   --sidebar-width: 14.5rem;
   --topbar-height: 4rem;
-  --sidebar-header-height: 6.5rem;
+  /* Alinhado à altura do --topbar-height (64px) — a logo (28px) não
+     precisa mais dos 104px antigos, dimensionados pra uma versão bem
+     maior da wordmark. */
+  --sidebar-header-height: 4rem;
   --page-padding-x: 2rem;
   --content-max-width: 77.5rem;
 
