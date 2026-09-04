@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { Button } from '@/shared/components/ui/button'
 import { formatCurrency } from '@/shared/lib/utils'
 import { loadLastProposal, getProposalById, loadProfile, type SavedProposal } from '@/shared/lib/storage'
 import { SERVICE_AREA_LABELS } from '@/shared/schemas'
@@ -40,25 +41,23 @@ function PropostaPreview() {
     return (
       <div className="min-h-screen bg-[var(--color-bg)]">
         <div className="sticky top-0 z-40 flex flex-wrap items-center gap-2.5 px-5 py-3 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
-          <Link
-            href="/propostas"
-            className="flex items-center gap-2 h-10 px-3.5 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
-          >
-            <ArrowLeft size={15} />
-            Propostas
-          </Link>
+          <Button asChild variant="secondary">
+            <Link href="/propostas">
+              <ArrowLeft size={15} />
+              Propostas
+            </Link>
+          </Button>
         </div>
         <div className="flex flex-col items-start gap-3.5 p-12 max-w-[620px]">
-          <h2 className="text-display-sm text-[var(--color-text)]">Nenhuma proposta para exibir</h2>
+          <h2 className="h2 text-[var(--color-text)]">Nenhuma proposta para exibir</h2>
           <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
             Calcule um orçamento e salve a proposta para gerar o documento comercial.
           </p>
-          <Link
-            href="/calcular"
-            className="h-11 flex items-center px-[18px] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)]"
-          >
-            Ir para a calculadora
-          </Link>
+          <Button asChild>
+            <Link href="/calcular">
+              Ir para a calculadora
+            </Link>
+          </Button>
         </div>
       </div>
     )
@@ -74,22 +73,17 @@ function PropostaPreview() {
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       <div className="sticky top-0 z-40 flex flex-wrap items-center gap-2.5 px-5 py-3 bg-[var(--color-bg)] border-b border-[var(--color-border)] print:hidden">
-        <Link
-          href="/propostas"
-          className="flex items-center gap-2 h-10 px-3.5 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
-        >
-          <ArrowLeft size={15} />
-          Propostas
-        </Link>
+        <Button asChild variant="secondary">
+          <Link href="/propostas">
+            <ArrowLeft size={15} />
+            Propostas
+          </Link>
+        </Button>
         <span className="label-uppercase ml-1">Proposta comercial · pronta para PDF</span>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="flex items-center gap-2 h-10 px-4 ml-auto bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
-        >
+        <Button type="button" onClick={() => window.print()} className="ml-auto">
           <Download size={15} />
           Exportar PDF
-        </button>
+        </Button>
       </div>
 
       {/* Documento A4 — cores fixas em hex (nunca tokens de tema): é impresso em papel branco sempre. */}

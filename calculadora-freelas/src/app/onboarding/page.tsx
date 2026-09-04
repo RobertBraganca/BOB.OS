@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/shared/components/ui/logo'
-import { calculateLayer1, TAX_RATES, type TaxRegime } from '@/modules/pricing/lib'
+import { Button } from '@/shared/components/ui/button'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { TAX_RATES, type TaxRegime } from '@/modules/pricing/lib'
+import { calculateLayer1Action } from '@/modules/pricing/lib/actions'
 import { SERVICE_AREA_LABELS, type ServiceArea } from '@/shared/schemas'
 import { saveCosts, saveProfile, markOnboarded, DEFAULT_COSTS, type SavedCosts } from '@/shared/lib/storage'
 import { formatCurrency } from '@/shared/lib/utils'
@@ -27,14 +30,24 @@ export default function OnboardingPage() {
   const [availableHours, setAvailableHours] = useState(176)
   const [billablePercentage, setBillablePercentage] = useState(60)
 
-  const layer1 = calculateLayer1({
-    monthlyExpenses: lumpExpenses,
-    desiredSalary,
-    technicalReserve: 0,
-    profitMargin: 0,
-    availableHours,
-    billablePercentage,
+  const [layer1, setLayer1] = useState({
+    billableHours: 0,
+    totalMonthlyCost: 0,
+    realHourlyRate: 0,
+    breakdown: { expenses: 0, salary: 0, reserve: 0, profit: 0 },
   })
+
+  /** Recalcula a prévia do valor-hora no servidor — no blur do campo e ao avançar de etapa, não a cada tecla. */
+  const recalcPreview = (overrides?: { lumpExpenses?: number; desiredSalary?: number; availableHours?: number; billablePercentage?: number }) => {
+    calculateLayer1Action({
+      monthlyExpenses: overrides?.lumpExpenses ?? lumpExpenses,
+      desiredSalary: overrides?.desiredSalary ?? desiredSalary,
+      technicalReserve: 0,
+      profitMargin: 0,
+      availableHours: overrides?.availableHours ?? availableHours,
+      billablePercentage: overrides?.billablePercentage ?? billablePercentage,
+    }).then(setLayer1)
+  }
 
   const canAdvance =
     step === 0 ? name.trim().length > 0 : step === 1 ? desiredSalary > 0 && availableHours > 0 : true
@@ -62,13 +75,15 @@ export default function OnboardingPage() {
       <header className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-[var(--color-border)]">
         <Logo height={26} />
         <span className="label-uppercase ml-1.5">Configuração inicial · {String(step + 1).padStart(2, '0')} de 03</span>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => persistAndGo('/dashboard')}
-          className="ml-auto text-xs font-600 text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+          className="ml-auto"
         >
           Pular por agora
-        </button>
+        </Button>
       </header>
       <div className="h-[3px] w-full bg-[var(--color-surface-raised)]">
         <div
@@ -84,7 +99,7 @@ export default function OnboardingPage() {
             <div className="flex flex-col gap-[22px]">
               <div className="flex flex-col gap-2.5">
                 <span className="label-uppercase text-[var(--color-brand-red)]">{STEP_LABELS[0]}</span>
-                <h1 className="text-display-lg text-[var(--color-text)]">Antes do preço, o profissional.</h1>
+                <h1 className="h1 text-[var(--color-text)]">Antes do preço, o profissional.</h1>
                 <p className="text-base leading-relaxed text-[var(--color-text-secondary)] max-w-[52ch]">
                   Seu nome assina a proposta. Sua área e seu regime tributário definem quanto imposto entra no preço — não no seu lucro.
                 </p>
@@ -96,7 +111,7 @@ export default function OnboardingPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Como você assina seus trabalhos"
-                  className="h-[52px] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border)] text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                  className="h-[var(--control-h)] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border-strong)] text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                 />
               </label>
 
@@ -110,9 +125,9 @@ export default function OnboardingPage() {
                         key={key}
                         type="button"
                         onClick={() => setArea(key)}
-                        className={`flex items-center justify-center gap-2 min-h-[46px] px-3 text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] transition-colors ${
+                        className={`flex items-center justify-center gap-2 min-h-[var(--control-h)] px-3 text-xs font-600 rounded-[var(--radius-md)] transition-colors ${
                           selected
-                            ? 'border border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-text)] font-800'
+                            ? 'border border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-text)]'
                             : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                         }`}
                       >
@@ -146,7 +161,7 @@ export default function OnboardingPage() {
                           <span className="w-[18px] h-[18px] rounded-full border border-[var(--color-border)] flex-shrink-0" />
                         )}
                         <span className="flex flex-col gap-0.5 flex-1 min-w-0">
-                          <span className="text-sm font-700 uppercase tracking-wide text-[var(--color-text)]">{r.label}</span>
+                          <span className="text-sm font-600 text-[var(--color-text)]">{r.label}</span>
                           <span className="text-2xs text-[var(--color-text-secondary)]">{r.description}</span>
                         </span>
                         <span
@@ -167,7 +182,7 @@ export default function OnboardingPage() {
             <div className="flex flex-col gap-[22px]">
               <div className="flex flex-col gap-2.5">
                 <span className="label-uppercase text-[var(--color-brand-red)]">{STEP_LABELS[1]}</span>
-                <h1 className="text-display-lg text-[var(--color-text)]">Quanto custa você existir?</h1>
+                <h1 className="h1 text-[var(--color-text)]">Quanto custa você existir?</h1>
                 <p className="text-base leading-relaxed text-[var(--color-text-secondary)] max-w-[52ch]">
                   Números aproximados já servem. Você refina tudo depois em Meus custos — e o piso se recalcula na hora.
                 </p>
@@ -180,8 +195,9 @@ export default function OnboardingPage() {
                     type="number"
                     value={lumpExpenses || ''}
                     onChange={(e) => setLumpExpenses(parseFloat(e.target.value) || 0)}
+                    onBlur={() => recalcPreview()}
                     placeholder="0"
-                    className="h-[52px] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    className="h-[var(--control-h)] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border-strong)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">Internet, softwares, contador, estrutura</span>
                 </label>
@@ -191,8 +207,9 @@ export default function OnboardingPage() {
                     type="number"
                     value={desiredSalary || ''}
                     onChange={(e) => setDesiredSalary(parseFloat(e.target.value) || 0)}
+                    onBlur={() => recalcPreview()}
                     placeholder="0"
-                    className="h-[52px] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    className="h-[var(--control-h)] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border-strong)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">O que você quer receber todo mês</span>
                 </label>
@@ -202,7 +219,8 @@ export default function OnboardingPage() {
                     type="number"
                     value={availableHours}
                     onChange={(e) => setAvailableHours(parseFloat(e.target.value) || 0)}
-                    className="h-[52px] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    onBlur={() => recalcPreview()}
+                    className="h-[var(--control-h)] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border-strong)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">Padrão: 176h = 22 dias × 8h</span>
                 </label>
@@ -212,7 +230,8 @@ export default function OnboardingPage() {
                     type="number"
                     value={billablePercentage}
                     onChange={(e) => setBillablePercentage(parseFloat(e.target.value) || 0)}
-                    className="h-[52px] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    onBlur={() => recalcPreview()}
+                    className="h-[var(--control-h)] px-3.5 bg-[var(--color-surface)] border border-[var(--color-border-strong)] font-mono text-base text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">Ninguém fatura 100% das horas</span>
                 </label>
@@ -237,34 +256,33 @@ export default function OnboardingPage() {
             <div className="flex flex-col gap-[22px]">
               <div className="flex flex-col gap-2.5">
                 <span className="label-uppercase text-[var(--color-brand-green)]">{STEP_LABELS[2]}</span>
-                <h1 className="text-display-lg text-[var(--color-text)]">Este é o seu piso.</h1>
+                <h1 className="h1 text-[var(--color-text)]">Este é o seu piso.</h1>
               </div>
 
-              <div
-                className="flex flex-col gap-4 p-[30px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]"
-                style={{ borderTop: '2px solid var(--color-brand-red)' }}
-              >
-                <span className="label-uppercase">Valor-hora real</span>
-                <span className="numeric-display leading-[.9] text-[var(--color-text)]" style={{ fontSize: 'clamp(48px,10vw,80px)' }}>
-                  {formatCurrency(layer1.realHourlyRate)}
-                </span>
-                <div className="flex flex-wrap gap-5 pt-3.5 border-t border-[var(--color-border)]">
-                  <div className="flex flex-col">
-                    <span className="label-uppercase">Horas faturáveis</span>
-                    <span className="font-mono text-sm font-700 text-[var(--color-text)]">{layer1.billableHours.toFixed(0)}h</span>
+              <Card variant="slab">
+                <CardContent className="flex flex-col gap-4 p-[30px]">
+                  <span className="label-uppercase">Valor-hora real</span>
+                  <span className="numeric-display leading-[.9] text-[var(--color-text)]" style={{ fontSize: 'clamp(48px,10vw,80px)' }}>
+                    {formatCurrency(layer1.realHourlyRate)}
+                  </span>
+                  <div className="flex flex-wrap gap-5 pt-3.5 border-t border-[var(--color-slab-accent-line)]">
+                    <div className="flex flex-col">
+                      <span className="label-uppercase">Horas faturáveis</span>
+                      <span className="font-mono text-sm font-700 text-[var(--color-text)]">{layer1.billableHours.toFixed(0)}h</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="label-uppercase">Custo mensal</span>
+                      <span className="font-mono text-sm font-700 text-[var(--color-text)]">{formatCurrency(layer1.totalMonthlyCost)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="label-uppercase">Regime</span>
+                      <span className="font-mono text-sm font-700 text-[var(--color-text)]">
+                        {TAX_RATES[regime].label} · {(TAX_RATES[regime].rate * 100).toFixed(1)}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="label-uppercase">Custo mensal</span>
-                    <span className="font-mono text-sm font-700 text-[var(--color-text)]">{formatCurrency(layer1.totalMonthlyCost)}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="label-uppercase">Regime</span>
-                    <span className="font-mono text-sm font-700 text-[var(--color-text)]">
-                      {TAX_RATES[regime].label} · {(TAX_RATES[regime].rate * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {layer1.realHourlyRate === 0 && (
                 <div className="flex items-center gap-3 p-4 bg-[var(--color-brand-yellow)]/[.12] border border-[var(--color-brand-yellow)]/30 rounded-[var(--radius-md)]">
@@ -276,53 +294,44 @@ export default function OnboardingPage() {
               )}
 
               <div className="flex flex-wrap gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => persistAndGo('/calcular')}
-                  className="flex items-center gap-2.5 h-[50px] px-[22px] bg-[var(--color-brand-red)] text-white font-display font-900 text-base tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
-                >
+                <Button type="button" onClick={() => persistAndGo('/calcular')}>
                   Calcular meu primeiro orçamento
                   <ArrowRight size={17} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => persistAndGo('/dashboard')}
-                  className="h-[50px] px-5 border border-[var(--color-border)] text-[var(--color-text)] font-display font-800 text-base tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
-                >
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => persistAndGo('/dashboard')}>
                   Ir para o dashboard
-                </button>
+                </Button>
               </div>
             </div>
           )}
 
           <div className="flex flex-wrap gap-2.5 pt-5 border-t border-[var(--color-border)]">
             {step > 0 && (
-              <button
-                type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-2 h-12 px-[18px] border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface)] transition-colors"
-              >
+              <Button type="button" variant="secondary" onClick={() => setStep((s) => s - 1)}>
                 <ArrowLeft size={15} />
                 Voltar
-              </button>
+              </Button>
             )}
             {step < 2 && !canAdvance && (
               <div className="flex items-center gap-3 ml-auto flex-wrap justify-end">
-                <span className="text-2xs tracking-wide uppercase text-[var(--color-brand-yellow)]">{hint}</span>
-                <span className="flex items-center gap-2 h-12 px-[22px] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] opacity-40 pointer-events-none">
+                <span className="label-uppercase text-[var(--color-brand-yellow)]">{hint}</span>
+                <Button type="button" disabled>
                   Continuar
-                </span>
+                </Button>
               </div>
             )}
             {step < 2 && canAdvance && (
-              <button
+              <Button
                 type="button"
-                onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-2 h-12 px-[22px] ml-auto bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
+                className="ml-auto"
+                onClick={() => {
+                  if (step === 1) recalcPreview()
+                  setStep((s) => s + 1)
+                }}
               >
                 Continuar
                 <ArrowRight size={15} />
-              </button>
+              </Button>
             )}
           </div>
 

@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PageContent } from '@/shared/components/layout/shell'
-import { calculateLayer1, calculateHourlyRateScenarios } from '@/modules/pricing/lib'
+import { PageContent, PageHeader } from '@/shared/components/layout/shell'
+import { calculateLayer1Action, calculateHourlyRateScenariosAction } from '@/modules/pricing/lib/actions'
 import { formatCurrency } from '@/shared/lib/utils'
 import { DEFAULT_COSTS, loadCosts, saveCosts, type SavedExpense } from '@/shared/lib/storage'
+import { Button } from '@/shared/components/ui/button'
 import { Plus, Trash2, Clock, CheckCircle2 } from 'lucide-react'
 
 const COMP_COLORS = {
@@ -13,6 +14,13 @@ const COMP_COLORS = {
   reserve: 'var(--color-brand-purple)',
   profit: 'var(--color-brand-green)',
 } as const
+
+const EMPTY_LAYER1 = {
+  billableHours: 0,
+  totalMonthlyCost: 0,
+  realHourlyRate: 0,
+  breakdown: { expenses: 0, salary: 0, reserve: 0, profit: 0 },
+}
 
 export default function CustosPage() {
   const [expenses, setExpenses] = useState<SavedExpense[]>(DEFAULT_COSTS.expenses)
@@ -23,6 +31,10 @@ export default function CustosPage() {
   const [billablePercentage, setBillablePercentage] = useState(DEFAULT_COSTS.billablePercentage)
   const [saved, setSaved] = useState(false)
 
+  const [result, setResult] = useState<Awaited<ReturnType<typeof calculateLayer1Action>>>(EMPTY_LAYER1)
+  const [scenarios, setScenarios] = useState<Awaited<ReturnType<typeof calculateHourlyRateScenariosAction>> | null>(null)
+  const [calculating, setCalculating] = useState(false)
+
   useEffect(() => {
     const costs = loadCosts()
     setExpenses(costs.expenses)
@@ -31,18 +43,53 @@ export default function CustosPage() {
     setProfitMargin(costs.profitMargin)
     setAvailableHours(costs.availableHours)
     setBillablePercentage(costs.billablePercentage)
+
+    const totalExpenses = costs.expenses.reduce((sum, e) => sum + e.amount, 0)
+    const layer1Input = {
+      monthlyExpenses: totalExpenses,
+      desiredSalary: costs.desiredSalary,
+      technicalReserve: costs.technicalReserve,
+      profitMargin: costs.profitMargin / 100,
+      availableHours: costs.availableHours,
+      billablePercentage: costs.billablePercentage,
+    }
+    calculateLayer1Action(layer1Input).then(setResult)
+    calculateHourlyRateScenariosAction(layer1Input).then(setScenarios)
   }, [])
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  /** Recalcula no servidor — chamado no blur de campo e após ações discretas (adicionar/remover despesa), nunca a cada tecla. */
+  const recalculate = async (overrides?: { expenses?: SavedExpense[]; desiredSalary?: number; technicalReserve?: number; profitMargin?: number; availableHours?: number; billablePercentage?: number }) => {
+    const next = {
+      expenses: overrides?.expenses ?? expenses,
+      desiredSalary: overrides?.desiredSalary ?? desiredSalary,
+      technicalReserve: overrides?.technicalReserve ?? technicalReserve,
+      profitMargin: overrides?.profitMargin ?? profitMargin,
+      availableHours: overrides?.availableHours ?? availableHours,
+      billablePercentage: overrides?.billablePercentage ?? billablePercentage,
+    }
+    const totalExpenses = next.expenses.reduce((sum, e) => sum + e.amount, 0)
+    const layer1Input = {
+      monthlyExpenses: totalExpenses,
+      desiredSalary: next.desiredSalary,
+      technicalReserve: next.technicalReserve,
+      profitMargin: next.profitMargin / 100,
+      availableHours: next.availableHours,
+      billablePercentage: next.billablePercentage,
+    }
+    setCalculating(true)
+    try {
+      const [r, s] = await Promise.all([
+        calculateLayer1Action(layer1Input),
+        calculateHourlyRateScenariosAction(layer1Input),
+      ])
+      setResult(r)
+      setScenarios(s)
+    } finally {
+      setCalculating(false)
+    }
+  }
 
-  const result = calculateLayer1({
-    monthlyExpenses: totalExpenses,
-    desiredSalary,
-    technicalReserve,
-    profitMargin: profitMargin / 100,
-    availableHours,
-    billablePercentage,
-  })
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
   const comp = [
     { key: 'expenses', label: 'Despesas fixas', value: result.breakdown.expenses, color: COMP_COLORS.expenses },
@@ -51,21 +98,22 @@ export default function CustosPage() {
     { key: 'profit', label: 'Margem de lucro', value: result.breakdown.profit, color: COMP_COLORS.profit },
   ].map((c) => ({ ...c, pct: result.totalMonthlyCost > 0 ? (c.value / result.totalMonthlyCost) * 100 : 0 }))
 
-  const scenarios = calculateHourlyRateScenarios({
-    monthlyExpenses: totalExpenses,
-    desiredSalary,
-    technicalReserve,
-    profitMargin: profitMargin / 100,
-    availableHours,
-  })
-  const scenList = [
+  const scenList = scenarios ? [
     { label: 'Conservador', pctLabel: '50% faturável', rate: scenarios.conservative.realHourlyRate },
     { label: 'Padrão', pctLabel: '60% faturável', rate: scenarios.standard.realHourlyRate },
     { label: 'Otimista', pctLabel: '70% faturável', rate: scenarios.optimistic.realHourlyRate },
-  ]
+  ] : []
 
-  const addExpense = () => setExpenses((prev) => [...prev, { id: Date.now().toString(), label: '', amount: 0, category: 'other' }])
-  const removeExpense = (id: string) => setExpenses((prev) => prev.filter((e) => e.id !== id))
+  const addExpense = () => {
+    const next = [...expenses, { id: Date.now().toString(), label: '', amount: 0, category: 'other' }]
+    setExpenses(next)
+    recalculate({ expenses: next })
+  }
+  const removeExpense = (id: string) => {
+    const next = expenses.filter((e) => e.id !== id)
+    setExpenses(next)
+    recalculate({ expenses: next })
+  }
   const updateExpense = (id: string, patch: Partial<SavedExpense>) =>
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
 
@@ -76,6 +124,14 @@ export default function CustosPage() {
     setProfitMargin(DEFAULT_COSTS.profitMargin)
     setAvailableHours(DEFAULT_COSTS.availableHours)
     setBillablePercentage(DEFAULT_COSTS.billablePercentage)
+    recalculate({
+      expenses: DEFAULT_COSTS.expenses,
+      desiredSalary: DEFAULT_COSTS.desiredSalary,
+      technicalReserve: DEFAULT_COSTS.technicalReserve,
+      profitMargin: DEFAULT_COSTS.profitMargin,
+      availableHours: DEFAULT_COSTS.availableHours,
+      billablePercentage: DEFAULT_COSTS.billablePercentage,
+    })
   }
 
   const handleSave = () => {
@@ -89,39 +145,29 @@ export default function CustosPage() {
   return (
     <PageContent>
       <div className="flex flex-col gap-[22px]">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <span className="label-uppercase text-[var(--color-brand-red)]">Camada 01 · custo de existência</span>
-            <h1 className="text-display-md text-[var(--color-text)]">Meus custos</h1>
-            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)] max-w-[56ch]">
-              Tudo que você paga para existir como profissional, dividido pelas horas que realmente fatura. É daqui que sai o seu piso.
-            </p>
-          </div>
-          <div className="flex gap-2.5 flex-wrap">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="h-[42px] px-3.5 border border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:text-[var(--color-text)] hover:border-[var(--color-text-muted)] transition-colors"
-            >
-              Limpar
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="flex items-center gap-2 h-[42px] px-[18px] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:brightness-110 transition-[filter]"
-            >
-              <CheckCircle2 size={15} />
-              {saved ? 'Custos salvos' : 'Salvar custos'}
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          label="Camada 01 · custo de existência"
+          title="Meus custos"
+          description="Tudo que você paga para existir como profissional, dividido pelas horas que realmente fatura. É daqui que sai o seu piso."
+          actions={
+            <>
+              <Button type="button" variant="secondary" onClick={handleReset}>
+                Limpar
+              </Button>
+              <Button type="button" variant="primary" onClick={handleSave}>
+                <CheckCircle2 size={15} />
+                {saved ? 'Custos salvos' : 'Salvar custos'}
+              </Button>
+            </>
+          }
+        />
 
         <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
           <div className="flex flex-col gap-4">
-            <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+            <section className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
               <div className="flex flex-col gap-1">
                 <span className="label-uppercase text-[var(--color-brand-blue)]">Despesas fixas mensais</span>
-                <h3 className="text-display-sm text-[var(--color-text)]">O que sai da conta todo mês</h3>
+                <h3 className="h2 text-[var(--color-text)]">O que sai da conta todo mês</h3>
                 <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
                   Internet, softwares, equipamento amortizado, contador, coworking, impostos fixos.
                 </p>
@@ -143,7 +189,7 @@ export default function CustosPage() {
                         value={e.label}
                         onChange={(ev) => updateExpense(e.id, { label: ev.target.value })}
                         placeholder="Ex.: Adobe Creative Cloud"
-                        className="h-[46px] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                        className="h-[var(--control-h)] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                       />
                     </label>
                     <label className="flex flex-col gap-1.5 w-[140px]">
@@ -152,39 +198,43 @@ export default function CustosPage() {
                         type="number"
                         value={e.amount || ''}
                         onChange={(ev) => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
+                        onBlur={() => recalculate()}
                         placeholder="0"
-                        className="h-[46px] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                        className="h-[var(--control-h)] w-full px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                       />
                     </label>
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="icon"
                       onClick={() => removeExpense(e.id)}
                       title="Remover despesa"
-                      className="flex items-center justify-center w-[46px] h-[46px] border border-[var(--color-border)] text-[var(--color-text-muted)] rounded-[var(--radius-md)] hover:text-[var(--color-brand-red)] hover:border-[var(--color-brand-red)] transition-colors"
+                      className="text-[var(--color-text-muted)] hover:text-[var(--color-brand-red)]"
                     >
                       <Trash2 size={16} />
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={addExpense}
-                className="flex items-center gap-2 self-start h-[42px] px-4 border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:text-[var(--color-text)] hover:border-[var(--color-brand-red)] transition-colors"
+                className="self-start"
               >
                 <Plus size={15} />
                 Adicionar despesa
-              </button>
+              </Button>
               <div className="flex items-center justify-between gap-3 pt-3.5 border-t border-[var(--color-border)]">
                 <span className="label-uppercase">Total de despesas</span>
                 <span className="numeric-display text-2xl text-[var(--color-text)]">{formatCurrency(totalExpenses)}</span>
               </div>
             </section>
 
-            <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+            <section className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
               <div className="flex flex-col gap-1">
                 <span className="label-uppercase text-[var(--color-brand-yellow)]">Remuneração e reservas</span>
-                <h3 className="text-display-sm text-[var(--color-text)]">Quanto você quer receber</h3>
+                <h3 className="h2 text-[var(--color-text)]">Quanto você quer receber</h3>
               </div>
               <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
                 <label className="flex flex-col gap-1.5">
@@ -193,8 +243,9 @@ export default function CustosPage() {
                     type="number"
                     value={desiredSalary || ''}
                     onChange={(e) => setDesiredSalary(parseFloat(e.target.value) || 0)}
+                    onBlur={() => recalculate()}
                     placeholder="0"
-                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    className="h-[var(--control-h)] px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">O que você quer depositar na sua conta todo mês</span>
                 </label>
@@ -204,12 +255,17 @@ export default function CustosPage() {
                     type="number"
                     value={technicalReserve || ''}
                     onChange={(e) => setTechnicalReserve(parseFloat(e.target.value) || 0)}
+                    onBlur={() => recalculate()}
                     placeholder="0"
-                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    className="h-[var(--control-h)] px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <button
                     type="button"
-                    onClick={() => setTechnicalReserve(Math.round(desiredSalary * 0.1))}
+                    onClick={() => {
+                      const suggested = Math.round(desiredSalary * 0.1)
+                      setTechnicalReserve(suggested)
+                      recalculate({ technicalReserve: suggested })
+                    }}
                     className="self-start text-2xs text-[var(--color-brand-red)]"
                   >
                     Usar sugestão: 10% do pró-labore
@@ -221,17 +277,18 @@ export default function CustosPage() {
                     type="number"
                     value={profitMargin}
                     onChange={(e) => setProfitMargin(parseFloat(e.target.value) || 0)}
-                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    onBlur={() => recalculate()}
+                    className="h-[var(--control-h)] px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">Lucro sobre o custo base · reinvestimento</span>
                 </label>
               </div>
             </section>
 
-            <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+            <section className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
               <div className="flex flex-col gap-1">
                 <span className="label-uppercase text-[var(--color-brand-green)]">Capacidade de trabalho</span>
-                <h3 className="text-display-sm text-[var(--color-text)]">Horas que existem × horas que faturam</h3>
+                <h3 className="h2 text-[var(--color-text)]">Horas que existem × horas que faturam</h3>
               </div>
               <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
                 <label className="flex flex-col gap-1.5">
@@ -240,7 +297,8 @@ export default function CustosPage() {
                     type="number"
                     value={availableHours}
                     onChange={(e) => setAvailableHours(parseFloat(e.target.value) || 0)}
-                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    onBlur={() => recalculate()}
+                    className="h-[var(--control-h)] px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">Padrão: 176h = 22 dias × 8h</span>
                 </label>
@@ -250,7 +308,8 @@ export default function CustosPage() {
                     type="number"
                     value={billablePercentage}
                     onChange={(e) => setBillablePercentage(parseFloat(e.target.value) || 0)}
-                    className="h-[46px] px-3 bg-[var(--color-bg)] border border-[var(--color-border)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
+                    onBlur={() => recalculate()}
+                    className="h-[var(--control-h)] px-3 bg-[var(--color-bg)] border border-[var(--color-border-strong)] font-mono text-sm text-[var(--color-text)] rounded-[var(--radius-md)] outline-none focus:border-[var(--color-brand-red)]"
                   />
                   <span className="text-2xs text-[var(--color-text-muted)]">Ninguém fatura 100%: orçamento, admin e prospecção também consomem hora</span>
                 </label>
@@ -264,14 +323,14 @@ export default function CustosPage() {
 
           <aside className="flex flex-col gap-4 sticky" style={{ top: 88 }}>
             <div
-              className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]"
-              style={{ borderTop: '2px solid var(--color-brand-red)' }}
+              className="flex flex-col gap-4 p-5 rounded-[var(--radius-card)] bg-[var(--color-slab-accent-bg)] border border-[var(--color-slab-accent-line)] [--color-text:var(--color-on-accent-1)] [--color-text-secondary:var(--color-on-accent-2)] [--color-text-muted:var(--color-on-accent-3)] text-[var(--color-on-accent-1)] transition-opacity"
+              style={{ opacity: calculating ? 0.6 : 1 }}
             >
-              <span className="label-uppercase">Valor-hora real · em tempo real</span>
+              <span className="label-uppercase">Valor-hora real</span>
               <span className="numeric-display leading-[.9] text-[var(--color-text)]" style={{ fontSize: 'clamp(40px,7vw,62px)' }}>
                 {formatCurrency(result.realHourlyRate)}
               </span>
-              <div className="flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]">
+              <div className="flex flex-col gap-2 pt-3 border-t border-[var(--color-slab-accent-line)]">
                 <div className="flex justify-between gap-2.5 text-xs">
                   <span className="text-[var(--color-text-secondary)]">Custo mensal total</span>
                   <span className="font-mono font-700 text-[var(--color-text)]">{formatCurrency(result.totalMonthlyCost)}</span>
@@ -283,7 +342,7 @@ export default function CustosPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+            <div className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
               <span className="label-uppercase">Composição do custo</span>
               <div className="flex flex-col gap-2.5">
                 {comp.map((c) => (
@@ -303,7 +362,7 @@ export default function CustosPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+            <div className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
               <span className="label-uppercase">Cenários de aproveitamento</span>
               {scenList.map((s) => (
                 <div key={s.label} className="flex items-center justify-between gap-2.5 p-2.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">

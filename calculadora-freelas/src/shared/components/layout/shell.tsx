@@ -52,8 +52,9 @@ function AppShell({ children, className }: AppShellProps) {
           className
         )}
       >
-        {/* Barra utilitária — persistente em todas as telas do app */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 py-5 px-5 border-b border-[var(--color-border)] bg-[var(--color-bg)] print:hidden">
+        {/* Barra utilitária — persistente em todas as telas do app, 64px
+            (--topbar-height, == --topbar-h do Finanças) */}
+        <header className="sticky top-0 z-20 flex items-center gap-3 h-[var(--topbar-height)] px-4 md:px-6 border-b border-[var(--color-border)] bg-[var(--color-bg)] print:hidden">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
@@ -64,14 +65,14 @@ function AppShell({ children, className }: AppShellProps) {
           </button>
           <div className="flex flex-col min-w-0">
             <span className="label-uppercase leading-none hidden">{route.eyebrow}</span>
-            <span className="font-display font-800 text-2xl uppercase tracking-tight text-[var(--color-text)] whitespace-nowrap overflow-hidden text-ellipsis">
+            <span className="h1 text-[var(--color-text)] whitespace-nowrap overflow-hidden text-ellipsis">
               {route.title}
             </span>
           </div>
           <div className="flex items-center gap-2 ml-auto flex-shrink-0">
             <Link
               href="/calcular"
-              className="flex items-center gap-2 h-10 px-4 rounded-[var(--radius-md)] bg-[var(--color-brand-red)] text-white text-xs font-800 tracking-wide uppercase hover:brightness-110 transition-[filter]"
+              className="flex items-center gap-2 h-[var(--control-h)] px-4 rounded-full bg-[var(--color-brand-red)] text-white text-sm font-600 hover:brightness-110 transition-[filter]"
             >
               <Plus size={15} />
               <span className="hidden sm:inline">Novo orçamento</span>
@@ -105,7 +106,7 @@ function PageHeader({ title, description, actions, label, className }: PageHeade
     >
       <div className="flex flex-col gap-1.5 min-w-0">
         {label && <span className="label-uppercase text-[var(--color-brand-red)]">{label}</span>}
-        <h1 className="text-display-md text-[var(--color-text)]">{title}</h1>
+        <h1 className="h1 text-[var(--color-text)]">{title}</h1>
         {description && (
           <p className="text-sm text-[var(--color-text-secondary)] max-w-xl leading-relaxed">
             {description}

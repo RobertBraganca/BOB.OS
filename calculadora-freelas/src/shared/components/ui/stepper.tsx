@@ -113,7 +113,7 @@ function StepHeader({ step, total, title, description, className }: StepHeaderPr
       <span className="label-uppercase">
         Etapa {step} de {total}
       </span>
-      <h2 className="text-display-md text-[var(--color-text)]">{title}</h2>
+      <h2 className="h1 text-[var(--color-text)]">{title}</h2>
       {description && (
         <p className="text-sm text-[var(--color-text-secondary)] max-w-lg leading-relaxed">
           {description}

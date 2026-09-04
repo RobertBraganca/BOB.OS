@@ -47,11 +47,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             className={cn(
               'w-full bg-[var(--color-surface)] text-[var(--color-text)]',
-              'border border-[var(--color-border)]',
-              'h-10 px-3 text-sm rounded-[var(--radius-md)]',
+              'border border-[var(--color-border-strong)]',
+              'h-[var(--control-h)] px-3 text-sm rounded-[var(--radius-md)]',
               'placeholder:text-[var(--color-text-muted)]',
               'transition-colors duration-150',
-              'focus:outline-none focus:border-[var(--color-brand-red)]',
+              'focus:outline-none focus:border-[var(--color-brand-red)] focus:shadow-[0_0_0_3px_rgba(255,0,0,0.18)]',
               'disabled:opacity-40 disabled:cursor-not-allowed',
               prefix && 'pl-9',
               suffix && 'pr-9',

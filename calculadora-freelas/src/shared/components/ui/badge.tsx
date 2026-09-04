@@ -29,9 +29,13 @@ const badgeVariants = cva(
         pink:     'bg-[var(--color-brand-pink)] text-white',
         purple:   'bg-[var(--color-brand-purple)] text-white',
         outline:  'bg-transparent text-[var(--color-text-secondary)] border border-[var(--color-border)]',
-        success:  'bg-[var(--color-success)]/15 text-[var(--color-success)] border border-[var(--color-success)]/30',
-        warning:  'bg-[var(--color-warning)]/15 text-[var(--color-warning)] border border-[var(--color-warning)]/30',
-        danger:   'bg-[var(--color-danger)]/15 text-[var(--color-danger)] border border-[var(--color-danger)]/30',
+        /* Wash + passo escuro (regra do BOB Finanças: status nunca é a cor
+           crua da marca — em texto pequeno ela não fecha 4.5:1 de
+           contraste). Fundo tintado ~12%, borda tintada ~35%, texto nos
+           tons de status/delta já calibrados como texto. */
+        success:  'bg-[var(--color-status-good)]/10 text-[var(--color-status-good)] border border-[var(--color-status-good)]/35',
+        warning:  'bg-[var(--color-status-warning)]/12 text-[var(--color-status-warning)] border border-[var(--color-status-warning)]/35',
+        danger:   'bg-[var(--color-status-critical)]/8 text-[var(--color-delta-down)] border border-[var(--color-status-critical)]/35',
       },
     },
     defaultVariants: {

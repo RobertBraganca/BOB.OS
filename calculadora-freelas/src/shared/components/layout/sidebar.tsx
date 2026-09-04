@@ -19,10 +19,14 @@ import { useTheme } from 'next-themes'
 import { Logo } from '@/shared/components/ui/logo'
 
 /**
- * Sidebar — Design System BOB.OS (design_handoff_bobos_redesign)
+ * Sidebar — Design System BOB.OS (alinhado ao BOB Finanças)
  *
- * Fixa em >=1024px (248px), drawer overlay abaixo disso.
- * Item ativo: régua de 3px à esquerda + wash vermelho 10% + tipografia display.
+ * Fixa em >=1024px (232px, --sidebar-width), drawer overlay abaixo disso.
+ * Item ativo: pílula preta sólida (#080808) + texto branco — mesmo padrão
+ * de `.nav__item[aria-current='page']` do Finanças (chrome, não card: fica
+ * preto sempre, claro ou escuro). Texto do nav em peso normal/corpo, não
+ * mais Barlow Condensed caixa alta — só o rótulo do grupo continua em
+ * `.label-uppercase`.
  * Sem recolhimento — não existe no design de referência.
  */
 
@@ -106,14 +110,13 @@ function Sidebar({ className, open = false, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={() => onClose?.()}
                   className={cn(
-                    'flex items-center gap-3 w-full min-h-11 px-3 rounded-r-[var(--radius-md)] font-display uppercase tracking-[0.01em] text-left transition-colors',
-                    'border-l-[3px]',
+                    'flex items-center gap-3 w-full min-h-11 px-3 rounded-[var(--radius-md)] font-body text-left transition-colors',
                     isActive
-                      ? 'border-l-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-text)] font-800 text-base'
-                      : 'border-l-transparent text-[var(--color-text-secondary)] font-700 text-base hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
+                      ? 'bg-[#080808] text-white font-600 text-sm'
+                      : 'text-[var(--color-text-secondary)] font-500 text-sm hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
                   )}
                 >
-                  <Icon size={18} className={cn('flex-shrink-0', isActive && 'text-[var(--color-brand-red)]')} />
+                  <Icon size={18} className={cn('flex-shrink-0', isActive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-text-disabled)]')} />
                   <span className="truncate">{item.label}</span>
                 </Link>
               )

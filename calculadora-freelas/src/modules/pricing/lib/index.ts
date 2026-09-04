@@ -40,6 +40,9 @@ export {
 } from './adegraf'
 export type { BenchmarkService } from './adegraf'
 
+export { submitPricingEvent } from './events'
+export type { PricingEventInput } from './events'
+
 
 import { calculateLayer1, type Layer1Input } from './layer1'
 import { calculateLayer2, type Layer2Input } from './layer2'

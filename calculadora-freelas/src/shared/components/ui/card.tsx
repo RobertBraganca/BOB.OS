@@ -2,17 +2,25 @@ import * as React from 'react'
 import { cn } from '@/shared/lib/utils'
 
 /**
- * Card — Design System BOB.OS
+ * Card — Design System BOB.OS (alinhado ao BOB Finanças)
  *
  * DNA Visual:
- * - Fundo #101010, borda #222
- * - Sem shadow ornamental
- * - Padding generoso e consistente
- * - Linha superior colorida opcional (accent)
+ * - Raio de card dedicado (16px, --radius-card), maior que o de qualquer
+ *   bloco interno
+ * - Fundo --color-surface, borda --color-border — sem shadow ornamental
+ * - Padding generoso e consistente (p-5)
+ * - `variant="slab"`: card de DESTAQUE, fundo escuro sólido — regra do
+ *   Finanças é usar no máximo UM por tela (o "card mais importante"),
+ *   nunca uma barra colorida por card (isso saiu, ver `accent` abaixo)
  */
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** @deprecated Sem equivalente no BOB Finanças — nenhum card novo deveria
+   *  usar isto. Mantido só para não quebrar call sites antigos; prefira
+   *  `variant="slab"` para o card de destaque de uma tela. */
   accent?: 'red' | 'yellow' | 'green' | 'blue' | 'pink' | 'purple' | 'none'
+  /** Card de destaque escuro — no máximo um por tela. */
+  variant?: 'default' | 'slab'
   hoverable?: boolean
 }
 
@@ -26,13 +34,25 @@ const ACCENT_COLORS = {
   none:   '',
 }
 
-function Card({ className, accent = 'none', hoverable = false, children, ...props }: CardProps) {
+function Card({ className, accent = 'none', variant = 'default', hoverable = false, children, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'relative bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]',
+        'relative rounded-[var(--radius-card)]',
         'overflow-hidden',
-        hoverable && 'transition-colors duration-150 hover:border-[var(--color-text-muted)] cursor-pointer',
+        variant === 'default' && 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)]',
+        /* Re-aponta --color-text/-secondary/-muted para os tons "on-accent"
+           dentro do escopo do card — mesma técnica do `.on-slab` do BOB
+           Finanças: filhos (CardTitle, CardDescription, MetricCard) usam os
+           tokens normais e se adaptam ao fundo escuro sem saber disso. */
+        variant === 'slab' && [
+          'bg-[var(--color-slab-accent-bg)] border border-[var(--color-slab-accent-line)]',
+          '[--color-text:var(--color-on-accent-1)]',
+          '[--color-text-secondary:var(--color-on-accent-2)]',
+          '[--color-text-muted:var(--color-on-accent-3)]',
+          'text-[var(--color-on-accent-1)]',
+        ],
+        hoverable && 'transition-colors duration-150 hover:border-[var(--color-border-strong)] cursor-pointer',
         accent !== 'none' && [
           'before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px]',
           ACCENT_COLORS[accent],
@@ -58,7 +78,7 @@ function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement
 function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn('font-display font-700 text-display-sm text-[var(--color-text)]', className)}
+      className={cn('h2 text-[var(--color-text)]', className)}
       {...props}
     />
   )

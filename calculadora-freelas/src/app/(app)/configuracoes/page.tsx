@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { PageContent } from '@/shared/components/layout/shell'
-import { loadPrefs, savePrefs, exportBackupJSON, eraseAllData, type Prefs } from '@/shared/lib/storage'
-import { createClient } from '@/shared/lib/client'
-import { Moon, Sun, Clock, Zap, Download, Trash2 } from 'lucide-react'
+import { PageContent, PageHeader } from '@/shared/components/layout/shell'
+import { loadPrefs, savePrefs, exportBackupJSON, eraseAllData, DEFAULT_PREFS, type Prefs } from '@/shared/lib/storage'
+import { Button } from '@/shared/components/ui/button'
+import { Moon, Sun, Zap, Download, Trash2 } from 'lucide-react'
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -29,7 +29,7 @@ export default function ConfiguracoesPage() {
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [prefs, setPrefs] = useState<Prefs>({ roundValues: false, showBenchmark: true, autosave: true })
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS)
   const [toast, setToast] = useState('')
 
   useEffect(() => {
@@ -49,13 +49,6 @@ export default function ConfiguracoesPage() {
   }
 
   const isDark = !mounted || resolvedTheme !== 'light'
-
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   const handleRestartOnboarding = () => {
     localStorage.removeItem('bob_onboarded')
@@ -77,32 +70,27 @@ export default function ConfiguracoesPage() {
     if (!confirm('Apagar todos os custos, perfil e propostas salvos neste navegador? Esta ação não pode ser desfeita.')) return
     eraseAllData()
     showToast('Todos os dados foram apagados')
-    setPrefs({ roundValues: false, showBenchmark: true, autosave: true })
+    setPrefs(DEFAULT_PREFS)
   }
 
   return (
     <PageContent>
       <div className="flex flex-col gap-[22px] max-w-[820px]">
-        <div className="flex flex-col gap-1.5">
-          <span className="label-uppercase text-[var(--color-brand-red)]">Preferências</span>
-          <h1 className="text-display-md text-[var(--color-text)]">Configurações</h1>
-          <p className="text-sm leading-relaxed text-[var(--color-text-secondary)] max-w-[56ch]">
-            Cada chave aqui muda o comportamento do sistema na hora, nada é decorativo.
-          </p>
-        </div>
+        <PageHeader
+          label="Preferências"
+          title="Configurações"
+          description="Cada chave aqui muda o comportamento do sistema na hora, nada é decorativo."
+        />
 
-        <section
-          className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]"
-          style={{ borderTop: '2px solid var(--color-brand-red)' }}
-        >
+        <section className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
           <span className="label-uppercase">Aparência</span>
           <div className="flex flex-wrap gap-2.5">
             <button
               type="button"
               onClick={() => setTheme('dark')}
-              className="flex items-center gap-2 h-[46px] px-[18px] text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)]"
+              className="flex items-center gap-2 h-[var(--control-h)] px-4 text-xs font-600 rounded-full"
               style={{
-                border: `1px solid ${isDark ? 'var(--color-brand-red)' : 'var(--color-border)'}`,
+                border: `1px solid ${isDark ? 'var(--color-brand-red)' : 'var(--color-border-strong)'}`,
                 background: isDark ? 'rgba(255,0,0,.08)' : 'var(--color-bg)',
                 color: isDark ? 'var(--color-text)' : 'var(--color-text-secondary)',
               }}
@@ -113,9 +101,9 @@ export default function ConfiguracoesPage() {
             <button
               type="button"
               onClick={() => setTheme('light')}
-              className="flex items-center gap-2 h-[46px] px-[18px] text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)]"
+              className="flex items-center gap-2 h-[var(--control-h)] px-4 text-xs font-600 rounded-full"
               style={{
-                border: `1px solid ${!isDark ? 'var(--color-brand-red)' : 'var(--color-border)'}`,
+                border: `1px solid ${!isDark ? 'var(--color-brand-red)' : 'var(--color-border-strong)'}`,
                 background: !isDark ? 'rgba(255,0,0,.08)' : 'var(--color-bg)',
                 color: !isDark ? 'var(--color-text)' : 'var(--color-text-secondary)',
               }}
@@ -126,7 +114,7 @@ export default function ConfiguracoesPage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-3 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+        <section className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
           <span className="label-uppercase">Comportamento do motor</span>
 
           <div className="flex flex-wrap items-center gap-3.5 p-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
@@ -152,44 +140,34 @@ export default function ConfiguracoesPage() {
             </div>
             <Toggle on={prefs.autosave} onToggle={() => updatePref({ autosave: !prefs.autosave })} />
           </div>
+
+          <div className="flex flex-wrap items-center gap-3.5 p-3.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[var(--radius-md)]">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-[200px]">
+              <span className="text-sm font-700 text-[var(--color-text)]">Contribuir com dados de mercado</span>
+              <span className="text-2xs leading-relaxed text-[var(--color-text-muted)]">
+                Envia o resultado de cada proposta salva de forma anônima — sem nome, e-mail ou dado do seu cliente — pra ajudar a construir o benchmark de mercado do BOB.OS. Desligado por padrão.
+              </span>
+            </div>
+            <Toggle on={prefs.contributeToMarketData} onToggle={() => updatePref({ contributeToMarketData: !prefs.contributeToMarketData })} />
+          </div>
         </section>
 
-        <section className="flex flex-col gap-3.5 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+        <section className="flex flex-col gap-4 p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)]">
           <span className="label-uppercase">Seus dados</span>
           <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">Tudo fica no seu navegador. Nada sobe para servidor nenhum.</p>
           <div className="flex flex-wrap gap-2.5">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center gap-2 h-11 px-4 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface-raised)] transition-colors"
-            >
-              <Clock size={15} />
-              Encerrar sessão
-            </button>
-            <button
-              type="button"
-              onClick={handleRestartOnboarding}
-              className="flex items-center gap-2 h-11 px-4 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface-raised)] transition-colors"
-            >
+            <Button type="button" variant="secondary" onClick={handleRestartOnboarding}>
               <Zap size={15} />
               Refazer configuração inicial
-            </button>
-            <button
-              type="button"
-              onClick={handleExport}
-              className="flex items-center gap-2 h-11 px-4 border border-[var(--color-border)] text-[var(--color-text)] text-xs font-700 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-surface-raised)] transition-colors"
-            >
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleExport}>
               <Download size={15} />
               Exportar backup JSON
-            </button>
-            <button
-              type="button"
-              onClick={handleWipe}
-              className="flex items-center gap-2 h-11 px-4 border border-[var(--color-brand-red)] text-[var(--color-brand-red)] text-xs font-800 tracking-wide uppercase rounded-[var(--radius-md)] hover:bg-[var(--color-brand-red)]/10 transition-colors"
-            >
+            </Button>
+            <Button type="button" variant="danger" onClick={handleWipe}>
               <Trash2 size={15} />
               Apagar tudo
-            </button>
+            </Button>
           </div>
         </section>
       </div>

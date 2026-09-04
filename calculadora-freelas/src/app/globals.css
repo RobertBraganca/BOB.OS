@@ -97,10 +97,20 @@
   --radius-xl: 8px;
   --radius-2xl: 12px;
   --radius-full: 9999px;
+  /* Raio dedicado de CARD, alinhado ao BOB Finanças (App finanças/Web App,
+     tokens.css: --r-card): 16px, separado dos raios menores usados em
+     blocos internos (input, badge, chip). Botão passa a usar --radius-full
+     (pílula) como padrão — ver button.tsx. */
+  --radius-card: 1rem;
+
+  /* ─── Altura de controle — botões e inputs em 36px (BOB Finanças: --btn
+     min-height / --input min-height), substituindo os 40-46px soltos que
+     cada tela vinha definindo por conta própria. */
+  --control-h: 2.25rem;
 
   /* ─── Layout ─────────────────────────────────────────────────────────────── */
-  --sidebar-width: 15.5rem;
-  --topbar-height: 5.5rem;
+  --sidebar-width: 14.5rem;
+  --topbar-height: 4rem;
   --sidebar-header-height: 6.5rem;
   --page-padding-x: 2rem;
   --content-max-width: 77.5rem;
@@ -132,6 +142,52 @@
   --color-text-secondary: #52525B;
   --color-text-muted: #71717A;
   --color-text-disabled: #A1A1AA;
+
+  /* ─── Bordas intermediárias (BOB Finanças: --line-strong / --hairline) ────
+     --color-border já cobre a borda padrão (#E4E4E7, == --line do Finanças).
+     Faltavam os dois passos vizinhos: uma borda mais forte para campo de
+     formulário/controle (WCAG 1.4.11, 3:1 contra a superfície) e um fio bem
+     fraco para separar linhas de tabela sem virar grade. */
+  --color-border-strong: #8A8A93;
+  --color-hairline: rgba(9, 9, 11, 0.08);
+
+  /* ─── Ink card / destaque escuro (BOB Finanças: --slab-accent-bg, --on-
+     accent-*) — exatamente UM card de destaque por tela usa este par, nunca
+     mais de um (ver card.tsx, variant="slab"). */
+  --color-slab-accent-bg: #080808;
+  --color-on-accent-1: #FFFFFF;
+  --color-on-accent-2: rgba(255, 255, 255, 0.72);
+  --color-on-accent-3: rgba(255, 255, 255, 0.5);
+  --color-slab-accent-line: #1F1F1F;
+
+  /* ─── Categorical series (identidade, não status) — mesmo cap de 4 cores
+     do Finanças: azul/rosa/verde/roxo. Vermelho e amarelo ficam reservados
+     para --color-status-*. */
+  --color-series-1: #007BFF;
+  --color-series-2: #FF2EA6;
+  --color-series-3: #1E8E3C;
+  --color-series-4: #BA2BE2;
+  --color-series-3-slab: #32D74B;
+
+  /* ─── Sequential ramp (magnitude: heatmap, medidores) — âncora no azul da
+     marca, mesma rampa do Finanças. */
+  --color-seq-100: #D6EAFF;
+  --color-seq-200: #8FC5FF;
+  --color-seq-300: #3396FF;
+  --color-seq-400: #007BFF;
+  --color-seq-500: #004A99;
+  --color-seq-600: #003166;
+  --color-seq-700: #002347;
+
+  /* ─── Status (nunca cor de série) — mesma semântica: bom=verde, atenção=
+     amarelo, crítico=vermelho, mas em passo mais escuro que a marca crua
+     para valer como TEXTO (contraste 4.5:1). */
+  --color-status-good: #1E8E3C;
+  --color-status-warning: #A66A00;
+  --color-status-serious: #E8590C;
+  --color-status-critical: #FF0000;
+  --color-delta-up: #14682A;
+  --color-delta-down: #CC0000;
 
   /* ─── Interaction ────────────────────────────────────────────────────────── */
   --color-focus-ring: var(--color-brand-red);
@@ -185,6 +241,25 @@
   --color-text-secondary: #A1A1AA;
   --color-text-muted: #52525B;
   --color-text-disabled: #3F3F46;
+
+  /* Mesmo motivo do claro: #3F3F46 dava 1,82:1 sobre #101010: #666670 dá
+     3,35:1 (auditoria replicada do Finanças). */
+  --color-border-strong: #666670;
+  --color-hairline: rgba(255, 255, 255, 0.08);
+
+  --color-slab-accent-bg: #262626;
+  --color-on-accent-1: #FFFFFF;
+  --color-on-accent-2: #A1A1AA;
+  --color-on-accent-3: #71717A;
+  --color-slab-accent-line: #333333;
+
+  --color-series-1: #007BFF;
+  --color-series-2: #FF2EA6;
+  --color-series-3: #32D74B;
+  --color-series-4: #BA2BE2;
+
+  --color-delta-up: #32D74B;
+  --color-delta-down: #FF0000;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -356,13 +431,42 @@ a.link:hover {
   text-transform: uppercase;
 }
 
+/* Regra de uso do BOB Finanças (.label): rótulo pequeno, peso 500, tracking
+   0.04em — mais contido que o tracking-widest anterior, que competia com o
+   próprio texto que rotulava. */
 .label-uppercase {
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-widest);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-text-muted);
   font-family: var(--font-body);
+}
+
+/* ─── Títulos de seção/card — sentence case (regra do BOB Finanças: só
+   `.label-uppercase` é caixa alta; título de card/seção NUNCA é). Convivem
+   com `.text-display-*` (marketing/hero), que continuam em Barlow caixa
+   alta de propósito. */
+.h1 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  text-transform: none;
+}
+
+.h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  text-transform: none;
+}
+
+.h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-transform: none;
 }
 
 .numeric-display {
@@ -477,41 +581,6 @@ a.link:hover {
   animation: slide-up var(--duration-slow) var(--ease-out) forwards;
 }
 
-/* ─── Landing Hero Aurora (glow animado atrás do hero, cores do brandboard) ── */
-
-@keyframes aurora-drift {
-  0%   { transform: translate(-6%, -5%) rotate(0deg) scale(1); }
-  50%  { transform: translate(6%, 5%) rotate(180deg) scale(1.2); }
-  100% { transform: translate(-6%, -5%) rotate(360deg) scale(1); }
-}
-
-.landing-aurora {
-  position: absolute;
-  inset: -35%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 15% 20%, var(--color-brand-red) 0%, transparent 32%),
-    radial-gradient(circle at 85% 15%, var(--color-brand-yellow) 0%, transparent 32%),
-    radial-gradient(circle at 20% 85%, var(--color-brand-blue) 0%, transparent 34%),
-    radial-gradient(circle at 80% 80%, var(--color-brand-purple) 0%, transparent 34%),
-    radial-gradient(circle at 50% 50%, var(--color-brand-pink) 0%, transparent 36%);
-  filter: blur(80px) saturate(1.3);
-  opacity: 0.16;
-  animation: aurora-drift 26s ease-in-out infinite;
-  will-change: transform;
-}
-
-.dark .landing-aurora {
-  opacity: 0.34;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing-aurora {
-    animation: none;
-  }
-}
-
 /* ─── Divider ─────────────────────────────────────────────────────────────── */
 
 .divider {
@@ -532,11 +601,11 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* ─── shadcn/Supabase UI (componentes usados no fluxo de auth real) ──────────
-   Tokens de cor/foco/gráfico próprios do shadcn, para os blocos de UI do
-   Supabase Auth. NUNCA redefinir --color-border ou --radius-* aqui — esses
-   nomes já pertencem ao design system BOB.OS (definido acima) e não podem
-   ser sobrescritos por este bloco. */
+/* ─── shadcn UI (Dialog, Select, Tabs, etc.) ─────────────────────────────────
+   Tokens de cor/foco/gráfico próprios do shadcn, usados pelos componentes
+   Radix/shadcn do app. NUNCA redefinir --color-border ou --radius-* aqui —
+   esses nomes já pertencem ao design system BOB.OS (definido acima) e não
+   podem ser sobrescritos por este bloco. */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);

@@ -4,24 +4,26 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/shared/lib/utils'
 
 /**
- * Button — Design System BOB.OS
+ * Button — Design System BOB.OS (alinhado ao BOB Finanças)
  *
  * DNA Visual:
+ * - Pílula (rounded-full) — raio duro fica só para cards/inputs/badges
  * - Fundo sólido vermelho (#FF0000) no variant primary
- * - Sem border-radius excessivo (4px — var(--radius-md))
- * - Tipografia Barlow Condensed em caixa alta
+ * - Tipografia de corpo (Inter), peso 600, SEM caixa alta — o Finanças não
+ *   usa uppercase em botão, só em `.label`
  * - Hover: ligeiro brightness
  * - Sem shadows ornamentais
  */
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2',
-    'font-display font-700 uppercase tracking-wider',
+    'font-body font-600',
     'select-none whitespace-nowrap',
     'transition-all duration-150 ease-out',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-red)]',
     'disabled:opacity-40 disabled:pointer-events-none',
     'cursor-pointer',
+    'rounded-full',
   ].join(' '),
   {
     variants: {
@@ -31,15 +33,15 @@ const buttonVariants = cva(
           'hover:brightness-110 active:brightness-90',
         ],
         secondary: [
-          'bg-transparent text-[var(--color-text)] border border-[var(--color-border)]',
-          'hover:bg-[var(--color-surface-raised)] hover:border-[var(--color-text-muted)]',
+          'bg-transparent text-[var(--color-text)] border border-[var(--color-border-strong)]',
+          'hover:bg-[var(--color-surface-raised)]',
         ],
         ghost: [
           'bg-transparent text-[var(--color-text-secondary)]',
           'hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]',
         ],
         danger: [
-          'bg-transparent text-[var(--color-brand-red)] border border-[var(--color-brand-red)]',
+          'bg-transparent text-[var(--color-brand-red)] border border-[var(--color-brand-red)]/40',
           'hover:bg-[var(--color-brand-red)] hover:text-white',
         ],
         yellow: [
@@ -48,11 +50,11 @@ const buttonVariants = cva(
         ],
       },
       size: {
-        sm: 'h-8 px-4 text-xs rounded-[var(--radius-md)]',
-        md: 'h-10 px-6 text-sm rounded-[var(--radius-md)]',
-        lg: 'h-12 px-8 text-base rounded-[var(--radius-md)]',
-        xl: 'h-14 px-10 text-lg rounded-[var(--radius-md)]',
-        icon: 'h-10 w-10 rounded-[var(--radius-md)]',
+        sm: 'h-[1.875rem] px-3 text-xs',
+        md: 'h-[var(--control-h)] px-4 text-sm',
+        lg: 'h-11 px-6 text-base',
+        xl: 'h-12 px-8 text-lg',
+        icon: 'h-[var(--control-h)] w-[var(--control-h)]',
       },
     },
     defaultVariants: {

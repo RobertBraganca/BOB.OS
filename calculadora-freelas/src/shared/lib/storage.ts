@@ -34,6 +34,8 @@ export interface SavedCosts {
 export interface SavedProfile {
   serviceArea: string
   taxRegime: TaxRegime
+  /** Como o profissional assina os próprios trabalhos — sem conta, é só um campo local. */
+  name?: string
 }
 
 export interface SavedProposalForm {
@@ -76,12 +78,15 @@ export interface Prefs {
   showBenchmark: boolean
   /** Persistência automática (sempre true nesta versão — não há modo offline puro). */
   autosave: boolean
+  /** Opt-in: envia o resultado de cada cálculo salvo, de forma anônima, para alimentar o benchmark de mercado. Desligado por padrão. */
+  contributeToMarketData: boolean
 }
 
 export const DEFAULT_PREFS: Prefs = {
   roundValues: false,
   showBenchmark: true,
   autosave: true,
+  contributeToMarketData: false,
 }
 
 const COSTS_KEY = 'bob_costs'
