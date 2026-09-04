@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'O DESIGNER BOB®', url: 'https://odesignerbob.com.br' }],
   creator: 'O DESIGNER BOB®',
+  icons: {
+    icon: '/logo-red.svg',
+    shortcut: '/logo-red.svg',
+    apple: '/logo-red.svg',
+  },
   openGraph: {
     title: 'BOB.OS · Calculadora de Freelas',
     description: 'Precifique com segurança técnica e comercial. Motor de cálculo em 3 camadas para profissionais criativos.',
